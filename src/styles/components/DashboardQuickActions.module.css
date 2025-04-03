@@ -1,0 +1,61 @@
+/* src/components/DashboardQuickActions.module.css */
+
+.actionsSection {
+  margin-top: 2rem;
+}
+
+.actionsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.actionButton {
+  flex: 1 0 45%;
+  min-width: 130px;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  display: flex;
+  gap: 0.5rem;
+  background-color: var(--primary-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #f0f0f0;
+}
+
+.activeCard {
+  background-color: #f0ead6;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  margin-top: 1rem;
+}
+
+.invitationNotice {
+  border: 1px solid #fcd34d;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #92400e;
+  font-weight: 500;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.expiredInfo {
+  border: 1px solid #d1d5db;
+  padding: 0.8rem 1rem;
+  margin-top: 1rem;
+  border-radius: 5px;
+  color: #374151;
+  font-size: 0.9rem;
+}

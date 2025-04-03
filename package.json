@@ -1,0 +1,47 @@
+{
+  "name": "equiparents-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@auth0/nextjs-auth0": "^3.5.0",
+    "@fullcalendar/daygrid": "^6.1.15",
+    "@fullcalendar/interaction": "^6.1.15",
+    "@fullcalendar/react": "^6.1.15",
+    "@fullcalendar/timegrid": "^6.1.15",
+    "country-telephone-data": "^0.6.3",
+    "date-fns": "^4.1.0",
+    "ipapi.co": "^0.3.0",
+    "jwt-decode": "^4.0.0",
+    "libphonenumber-js": "^1.12.6",
+    "next": "15.2.4",
+    "react": "^19.0.0",
+    "react-big-calendar": "^1.18.0",
+    "react-calendar": "^5.1.0",
+    "react-dom": "^19.0.0",
+    "react-feather": "^2.0.10",
+    "react-icons": "^5.5.0",
+    "react-select": "^5.10.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/jwt-decode": "^2.2.1",
+    "@types/node": "^20.17.28",
+    "@types/react": "^19",
+    "@types/react-calendar": "^3.9.0",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9",
+    "eslint-config-next": "15.2.4",
+    "postcss": "^8.5.3",
+    "postcss-import": "^16.1.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5"
+  }
+}

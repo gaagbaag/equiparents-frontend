@@ -1,0 +1,35 @@
+.card {
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.codeBox {
+  font-family: monospace;
+  display: inline-block;
+  font-size: 1rem;
+  margin: 0.5rem 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.actions button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+}
+
+.cancelButton {
+  background-color: crimson;
+  color: white;
+}
+
+.cancelButton:hover {
+  background-color: darkred;
+}

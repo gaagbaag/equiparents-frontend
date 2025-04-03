@@ -1,0 +1,52 @@
+/* Estilos actualizados para DashboardOverview */
+
+.overviewCard {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.actionsRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.inviteButton {
+  width: auto;
+}
+
+.inviteButton:hover {
+}
+
+.secondaryButton {
+}
+
+.secondaryButton:hover {
+  background-color: #e0dbcb;
+}
+
+.softButton {
+  width: auto;
+}
+
+.softButton:hover {
+  background-color: #e6dcc3;
+}
+
+.confirmationBox {
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 8px;
+  color: #333;
+  margin-top: 1rem;
+}
+
+.cardsWallet {
+  display: flex;
+  gap: 0.5rem;
+}

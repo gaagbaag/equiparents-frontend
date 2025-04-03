@@ -1,0 +1,66 @@
+/* src/styles/profile.module.css */
+
+.profileForm {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.button {
+  display: inline-block;
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--secondary-color);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover {
+  background-color: #500e52;
+}
+
+.flag {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+.error {
+  color: red;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
