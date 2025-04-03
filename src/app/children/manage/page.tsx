@@ -10,11 +10,7 @@ export default function ManageChildrenPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
-  const {
-    list: children,
-    loading,
-    error,
-  } = useAppSelector((state) => state.children);
+  const { list, loading, error } = useAppSelector((state) => state.children);
   const { token, isAuthenticated } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
@@ -33,6 +29,10 @@ export default function ManageChildrenPage() {
     return <p className="p-4">⏳ Esperando autenticación...</p>;
   }
 
+  if (!Array.isArray(list)) {
+    return <p className="text-red-600">⚠️ Error: hijos no disponibles.</p>;
+  }
+
   return (
     <main className="container max-w-3xl mx-auto">
       <h1 className="text-xl font-bold mb-6">👨‍👩‍👧‍👦 Hijos/as</h1>
@@ -40,11 +40,11 @@ export default function ManageChildrenPage() {
       {loading && <p>Cargando...</p>}
       {error && <p className="text-red-600">❌ {error}</p>}
 
-      {children.length === 0 ? (
+      {list.length === 0 ? (
         <p>No hay hijos/as registrados aún.</p>
       ) : (
         <div className="space-y-4">
-          {children.map((child) => (
+          {list.map((child) => (
             <div
               key={child.id}
               className="border border-gray-300 rounded p-4 flex justify-between items-center"

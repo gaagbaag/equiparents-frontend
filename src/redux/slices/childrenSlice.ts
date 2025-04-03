@@ -7,7 +7,7 @@ import {
   createChild,
   updateChild,
   deleteChild,
-} from "./thunks/childrenThunks";
+} from "../thunks/childrenThunks";
 
 interface ChildrenState {
   list: Child[];

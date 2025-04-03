@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
-import { setUser } from "@/redux/authSlice";
+import { setUser } from "@/redux/slices/authSlice";
 
 export default function OnboardingPage() {
   const router = useRouter();

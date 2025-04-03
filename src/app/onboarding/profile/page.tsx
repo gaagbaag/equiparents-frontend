@@ -7,7 +7,7 @@ import { validatePhone } from "@/utils/validatePhone";
 import { getSession } from "@/utils/session";
 import { logFetchError } from "@/utils/logFetchError";
 import { useDispatch } from "react-redux";
-import { setUser } from "@/redux/authSlice";
+import { setUser } from "@/redux/slices/authSlice";
 import { CountryCode } from "libphonenumber-js";
 import styles from "@/styles/pages/profile.module.css";
 import AddressForm from "@/components/onboarding/AddressForm";

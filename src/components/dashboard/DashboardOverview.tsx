@@ -1,21 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import type { RootState, AppDispatch } from "@/redux/store";
+import { fetchParentalAccount } from "@/redux/slices/parentalAccountSlice";
 import fetchWithToken from "@/utils/fetchWithToken";
+
 import styles from "@/styles/components/DashboardOverview.module.css";
 import Modal from "../Modal";
 import InviteParentForm from "../invitations/InviteParentForm";
 import ActiveInvitationCard from "../invitations/ActiveInvitationCard";
 import ExpiredInvitationCard from "../invitations/ExpiredInvitationCard";
-import childStyles from "@/styles/components/ChildrenManage.module.css";
-
-type OverviewData = {
-  firstName: string;
-  lastName: string;
-  childrenCount: number;
-  membersCount: number;
-};
 
 type DashboardOverviewProps = {
   onHistoryRefresh?: () => void;
@@ -25,7 +21,13 @@ export default function DashboardOverview({
   onHistoryRefresh,
 }: DashboardOverviewProps) {
   const router = useRouter();
-  const [data, setData] = useState<OverviewData | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const { children, users, status } = useSelector(
+    (state: RootState) => state.parentalAccount
+  );
+  const { user } = useSelector((state: RootState) => state.auth);
+
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [showDeclineChildrenModal, setShowDeclineChildrenModal] =
@@ -55,40 +57,17 @@ export default function DashboardOverview({
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [accountRes, userRes] = await Promise.all([
-          fetchWithToken(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/parental-accounts/my-account`
-          ),
-          fetchWithToken(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me`),
-        ]);
+    dispatch(fetchParentalAccount());
+    fetchActiveInvitation();
+  }, [dispatch]);
 
-        if (!accountRes.ok || !userRes.ok) return;
+  if (status === "loading") return <p>Cargando resumen...</p>;
 
-        const account = await accountRes.json();
-        const user = await userRes.json();
-
-        setData({
-          firstName: user.firstName,
-          lastName: user.lastName,
-          childrenCount: account.children?.length || 0,
-          membersCount: account.users?.length || 0,
-        });
-
-        await fetchActiveInvitation();
-      } catch (err) {
-        console.error("❌ Error cargando datos:", err);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  if (!data) return <p>Cargando resumen...</p>;
+  const membersCount = users.length;
+  const childrenCount = children.length;
 
   const renderInviteButton = () => {
-    if (data.membersCount >= 2) return null;
+    if (membersCount >= 2) return null;
 
     if (activeInvitation) {
       const expiresAt = new Date(activeInvitation.expiresAt);
@@ -101,36 +80,34 @@ export default function DashboardOverview({
       return (
         <div className={styles.invitationNotice}>
           <p>
-            Enviaste una invitación a {otherParentsName}, <br></br>que caduca en{" "}
-            <strong>{daysLeft} día(s)</strong>.
+            Enviaste una invitación a {otherParentsName}, <br />
+            que caduca en <strong>{daysLeft} día(s)</strong>.
           </p>
         </div>
       );
     }
 
     return (
-      <>
-        <div>
-          <div className={styles.cardsWallet}>
-            <button
-              type="button"
-              className={styles.inviteButton}
-              onClick={() => setShowInviteModal(true)}
-            >
-              <span className={styles.icon}>➕</span> Invitar otro progenitor
-            </button>
-            <button
-              type="button"
-              className={styles.softButton}
-              onClick={() => setShowDeclineModal(true)}
-            >
-              No invitar progenitor
-            </button>
-          </div>
-          <ActiveInvitationCard />
-          <ExpiredInvitationCard />
+      <div>
+        <div className={styles.cardsWallet}>
+          <button
+            type="button"
+            className={styles.inviteButton}
+            onClick={() => setShowInviteModal(true)}
+          >
+            <span className={styles.icon}>➕</span> Invitar otro progenitor
+          </button>
+          <button
+            type="button"
+            className={styles.softButton}
+            onClick={() => setShowDeclineModal(true)}
+          >
+            No invitar progenitor
+          </button>
         </div>
-      </>
+        <ActiveInvitationCard />
+        <ExpiredInvitationCard />
+      </div>
     );
   };
 
@@ -138,11 +115,11 @@ export default function DashboardOverview({
     <>
       <section className={styles.overviewCard}>
         <h2>
-          👋 Hola, {data.firstName} {data.lastName}
+          👋 Hola, {user?.firstName} {user?.lastName}
         </h2>
         <p>
-          Tienes {data.membersCount} miembro(s) en la cuenta parental y{" "}
-          {data.childrenCount} hijo(s) registrados.
+          Tienes {membersCount} miembro(s) en la cuenta parental y{" "}
+          {childrenCount} hijo(s) registrados.
         </p>
 
         <div className={styles.actionsRow}>
@@ -172,6 +149,7 @@ export default function DashboardOverview({
         )}
       </section>
 
+      {/* Modales */}
       <Modal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)}>
         <InviteParentForm
           onSuccess={() => setShowInviteModal(false)}

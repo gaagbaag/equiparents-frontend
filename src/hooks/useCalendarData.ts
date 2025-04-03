@@ -8,7 +8,7 @@ import {
   setChildren,
   setLoading,
   setError,
-} from "@/redux/calendarSlice";
+} from "@/redux/slices/calendarSlice";
 
 export default function useCalendarData() {
   const dispatch = useDispatch();

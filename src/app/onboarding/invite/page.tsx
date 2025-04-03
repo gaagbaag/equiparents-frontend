@@ -1,5 +1,6 @@
 "use client";
 
+import type { RootState, AppDispatch } from "@/redux/store";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
@@ -7,13 +8,13 @@ import {
   startAccept,
   acceptSuccess,
   acceptFailure,
-} from "@/redux/invitationSlice";
-import { RootState } from "@/redux/store";
+} from "@/redux/slices/invitationSlice";
+import { fetchParentalAccount } from "@/redux/slices/parentalAccountSlice";
 import InvitationForm from "@/components/invitations/InvitationForm";
 
 export default function InvitePage() {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { accepted, error, loading } = useSelector(
     (state: RootState) => state.invitation
   );
@@ -40,6 +41,7 @@ export default function InvitePage() {
       if (!res.ok) throw new Error(data.message || "Error al aceptar");
 
       dispatch(acceptSuccess(inviteCode));
+      dispatch(fetchParentalAccount());
       setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err: any) {
       dispatch(acceptFailure(err.message));

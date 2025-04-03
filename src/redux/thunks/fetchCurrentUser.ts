@@ -1,7 +1,7 @@
 // src/redux/thunks/fetchCurrentUser.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store";
-import { setUser } from "../authSlice";
+import { setUser } from "../slices/authSlice";
 import type { ExtendedAuthUser } from "@/types/auth";
 
 // thunk: fetchCurrentUser
