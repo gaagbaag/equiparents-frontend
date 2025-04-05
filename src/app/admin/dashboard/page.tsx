@@ -2,19 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getRedirectRoute } from "@/utils/getRedirectRoute";
 
 type HistoryEntry = {
   id: string;
   summary: string;
   createdAt: string;
-  user?: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  category?: {
-    name?: string;
-  };
+  user?: { firstName: string; lastName: string; email: string };
+  category?: { name?: string };
 };
 
 type AdminStats = {
@@ -27,79 +22,64 @@ type AdminStats = {
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<AdminStats | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // Guardar estado del rol admin
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Estado de carga
-  const [error, setError] = useState<string | null>(null); // Estado de error
+  const [roles, setRoles] = useState<string[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkAdminAccess = async () => {
+    const checkSession = async () => {
       try {
-        // Obtener datos de sesión desde el endpoint /api/session
         const sessionRes = await fetch("/api/session");
-        const user = await sessionRes.json();
-        console.log("📡 Respuesta de /api/session:", user);
+        const session = await sessionRes.json();
+        const userRoles = session?.roles || [];
+        setRoles(userRoles);
 
-        // Verificar si el rol de admin está presente en el array de roles
-        if (user?.roles && user.roles.includes("admin")) {
-          setIsAdmin(true); // Usuario tiene rol admin
-        } else {
-          setIsAdmin(false); // No tiene rol admin
-          console.log("🚫 El usuario no tiene rol de admin, redirigiendo...");
-          router.push("/dashboard"); // Redirige si no es admin
+        if (!userRoles.includes("admin")) {
+          router.push(getRedirectRoute(userRoles));
         }
       } catch (err) {
-        console.error("Error al verificar sesión", err);
-        setError("Error al verificar el rol de usuario.");
-        router.push("/dashboard"); // En caso de error, también redirige
+        console.error("❌ Error al verificar sesión:", err);
+        setError("Error al verificar sesión.");
+        router.push(getRedirectRoute([]));
       }
     };
-    checkAdminAccess();
+    checkSession();
   }, [router]);
 
-  // Verificar si estamos listos para cargar estadísticas
   useEffect(() => {
-    if (isAdmin === null) return; // Esperamos hasta que se determine el rol admin
+    if (!roles?.includes("admin")) return;
 
-    if (isAdmin) {
-      const fetchStats = async () => {
-        try {
-          setIsLoading(true); // Empezamos el loading
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
 
-          const tokenRes = await fetch("/api/auth/token");
-          const { accessToken } = await tokenRes.json();
+        const tokenRes = await fetch("/api/auth/token");
+        const { accessToken } = await tokenRes.json();
 
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/admin/dashboard`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/dashboard`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
 
-          if (!res.ok) throw new Error("Error al obtener datos");
+        if (!res.ok) throw new Error("Error al obtener datos");
 
-          const stats = await res.json();
-          setData(stats);
-          setIsLoading(false); // Terminamos el loading
-        } catch (err) {
-          console.error("❌ Error cargando stats:", err);
-          setError("Error al cargar las estadísticas.");
-          setIsLoading(false); // Terminamos el loading
-        }
-      };
+        const stats = await res.json();
+        setData(stats);
+      } catch (err) {
+        console.error("❌ Error cargando stats:", err);
+        setError("Error al cargar las estadísticas.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-      fetchStats();
-    }
-  }, [isAdmin]);
+    fetchStats();
+  }, [roles]);
 
-  // Estado de carga
   if (isLoading) return <p>Cargando estadísticas del sistema...</p>;
-
-  // Mostrar error
   if (error) return <p>{error}</p>;
-
-  // Asegurarse de que data no sea null antes de renderizar
   if (!data) return <p>No se encontraron estadísticas.</p>;
 
   return (

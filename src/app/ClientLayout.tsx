@@ -1,41 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { fetchCurrentUser } from "@/redux/thunks/fetchCurrentUser";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
+import { fetchAndSetSession } from "@/redux/thunks/fetchAndSetSession";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 
-export default function ClientLayout({
-  children,
-}: {
+interface Props {
   children: React.ReactNode;
-}) {
+}
+
+export default function ClientLayout({ children }: Props) {
   const dispatch = useAppDispatch();
-  const token = useAppSelector((state) => state.auth.token);
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [checked, setChecked] = useState(false); // ⏳ Controla carga inicial
+
+  const { token, isAuthenticated } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        await dispatch(fetchCurrentUser()).unwrap();
-      } catch (err) {
-        console.warn("🔒 No se pudo autenticar desde cookie.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (!isAuthenticated) {
-      load();
+    if (!token || !isAuthenticated) {
+      dispatch(fetchAndSetSession()).finally(() => setChecked(true));
     } else {
-      setLoading(false);
+      setChecked(true);
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, token, isAuthenticated]);
 
-  if (loading) return <div className="p-4">⏳ Esperando autenticación...</div>;
+  if (!checked) {
+    return <div className="p-4 text-center">⏳ Verificando sesión...</div>;
+  }
+
+  if (!token || !isAuthenticated) {
+    return <div className="p-4 text-center text-red-600">❌ No autorizado</div>;
+  }
 
   return (
     <div className="w-full min-h-screen flex bg-gray-50">

@@ -1,15 +1,19 @@
+// src/app/providers.tsx
 "use client";
 
-import { PropsWithChildren } from "react";
-import { Provider } from "react-redux";
-import store from "@/redux/store";
-import { useCheckSession } from "@/hooks/useCheckSession";
+import React, { useEffect, ReactNode, PropsWithChildren } from "react";
+import { Provider, useDispatch } from "react-redux";
+import store, { AppDispatch } from "@/redux/store";
+import { fetchAndSetSession } from "@/redux/thunks/fetchAndSetSession";
 
-function ReduxWrapper({ children }: PropsWithChildren) {
-  useCheckSession(); // 🧠 Hook que sincroniza sesión al cargar
+// 🔁 Encapsulamos la sincronización de sesión
+function ReduxWrapper({ children }: { children: ReactNode }) {
+  const dispatch = useDispatch<AppDispatch>();
+
   return <>{children}</>;
 }
 
+// 🌍 Proveedor global de Redux + sesión
 export default function Providers({ children }: PropsWithChildren) {
   return (
     <Provider store={store}>

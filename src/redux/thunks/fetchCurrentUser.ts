@@ -1,10 +1,9 @@
-// src/redux/thunks/fetchCurrentUser.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import { setUser } from "../slices/authSlice";
 import type { ExtendedAuthUser } from "@/types/auth";
 
-// thunk: fetchCurrentUser
+// ✅ fetchCurrentUser
 export const fetchCurrentUser = createAsyncThunk<
   void,
   void,
@@ -14,41 +13,42 @@ export const fetchCurrentUser = createAsyncThunk<
   async (_, { dispatch, getState, rejectWithValue }) => {
     const { token, isAuthenticated } = getState().auth;
 
-    if (isAuthenticated && token && token.trim() !== "") {
-      console.log("⚠️ fetchCurrentUser cancelado: ya hay sesión.");
+    if (isAuthenticated && token?.trim()) {
+      console.log("⚠️ fetchCurrentUser omitido: ya existe sesión válida.");
       return;
     }
 
     try {
-      const res = await fetch("/api/session");
-      if (!res.ok) throw new Error("No se pudo obtener la sesión");
+      const [sessionRes, tokenRes] = await Promise.all([
+        fetch("/api/session"),
+        fetch("/api/auth/token"),
+      ]);
 
-      const { user, token: fetchedToken, roles } = await res.json();
-
-      if (
-        !user ||
-        typeof fetchedToken !== "string" ||
-        fetchedToken.trim() === "" ||
-        !Array.isArray(roles)
-      ) {
-        return rejectWithValue("Sesión no válida");
+      if (!sessionRes.ok || !tokenRes.ok) {
+        throw new Error("No se pudo obtener sesión o token");
       }
 
-      console.log("✅ fetchCurrentUser completado", {
-        token: fetchedToken,
-        user,
-        roles,
-      });
+      const sessionData = await sessionRes.json();
+      const tokenData = await tokenRes.json();
+
+      const { user } = sessionData;
+      const roles = Array.isArray(sessionData.roles) ? sessionData.roles : [];
+      const fetchedToken = tokenData.token || tokenData.accessToken;
+
+      if (!user || typeof fetchedToken !== "string" || !fetchedToken.trim()) {
+        return rejectWithValue("⚠️ Sesión inválida o token ausente.");
+      }
 
       dispatch(setUser({ user, token: fetchedToken, roles }));
+      console.log("✅ Sesión sincronizada desde cookie:", { user, roles });
     } catch (err: any) {
-      console.error("❌ Error al obtener la sesión:", err.message);
-      return rejectWithValue(err.message);
+      console.error("❌ Error en fetchCurrentUser:", err.message);
+      return rejectWithValue("Error al sincronizar sesión");
     }
   }
 );
 
-// thunk: updateUserProfile
+// ✅ updateUserProfile
 export const updateUserProfile = createAsyncThunk<
   ExtendedAuthUser,
   {
@@ -60,10 +60,11 @@ export const updateUserProfile = createAsyncThunk<
 >(
   "auth/updateUserProfile",
   async (updatedData, { getState, dispatch, rejectWithValue }) => {
-    const state = getState();
-    const token = state.auth.token;
+    const { token } = getState().auth;
 
-    if (!token) return rejectWithValue("Token no disponible");
+    if (!token || !token.trim()) {
+      return rejectWithValue("Token no disponible");
+    }
 
     try {
       const res = await fetch(
@@ -85,17 +86,13 @@ export const updateUserProfile = createAsyncThunk<
 
       const data: ExtendedAuthUser & { roles: string[] } = await res.json();
 
-      console.log("✅ fetchCurrentUser completado", {
-        user: data,
-        token,
-        roles: data.roles,
-      });
-
       dispatch(setUser({ user: data, token, roles: data.roles }));
+      console.log("✅ Perfil actualizado y sesión sincronizada:", data);
+
       return data;
     } catch (err: any) {
       console.error("❌ Error en updateUserProfile:", err.message);
-      return rejectWithValue(err.message);
+      return rejectWithValue("Error al actualizar perfil");
     }
   }
 );

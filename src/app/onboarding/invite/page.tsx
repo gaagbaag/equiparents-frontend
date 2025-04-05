@@ -15,6 +15,7 @@ import InvitationForm from "@/components/invitations/InvitationForm";
 export default function InvitePage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+
   const { accepted, error, loading } = useSelector(
     (state: RootState) => state.invitation
   );
@@ -23,7 +24,9 @@ export default function InvitePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     dispatch(startAccept());
+    setInviteCode(""); // Reset inviteCode after submission
 
     try {
       const res = await fetch(
@@ -38,18 +41,26 @@ export default function InvitePage() {
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.message || "Error al aceptar");
+      if (!res.ok) {
+        throw new Error(data.message || "Error al aceptar la invitación");
+      }
 
       dispatch(acceptSuccess(inviteCode));
       dispatch(fetchParentalAccount());
-      setTimeout(() => router.push("/dashboard"), 1500);
+
+      // Redirect with a slight delay to show success state
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
     } catch (err: any) {
-      dispatch(acceptFailure(err.message));
+      const errorMessage = err.message || "Error desconocido";
+      dispatch(acceptFailure(errorMessage));
     }
   };
 
   return (
     <main className="container page-center">
+      <h2 className="heading-lg mb-4">Aceptar invitación</h2>
       <InvitationForm
         inviteCode={inviteCode}
         setInviteCode={setInviteCode}

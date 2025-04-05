@@ -2,20 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { setUser } from "@/redux/slices/authSlice";
+import { getRedirectRoute } from "@/utils/getRedirectRoute";
+import { logFetchError } from "@/utils/logFetchError";
+import { redirectIfProfileComplete } from "@/utils/redirectIfProfileComplete";
 import { useCountries, Country } from "@/hooks/useCountries";
 import { validatePhone } from "@/utils/validatePhone";
-import { getSession } from "@/utils/session";
-import { logFetchError } from "@/utils/logFetchError";
-import { useDispatch } from "react-redux";
-import { setUser } from "@/redux/slices/authSlice";
+import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { CountryCode } from "libphonenumber-js";
 import styles from "@/styles/pages/profile.module.css";
 import AddressForm from "@/components/onboarding/AddressForm";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const countries = useCountries();
+
+  const token = useAppSelector((state) => state.auth.token);
+  const roles = useAppSelector((state) => state.auth.roles);
 
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [countryCode, setCountryCode] = useState<CountryCode | "">("");
@@ -36,93 +40,95 @@ export default function ProfilePage() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const session = await getSession();
-      if (!session?.user) {
-        router.push("/api/auth/login");
-        return;
-      }
+    if (!token) {
+      router.push("/api/auth/login");
+      return;
+    }
 
+    const preload = async () => {
       try {
-        const tokenRes = await fetch("/api/auth/token");
-        const { accessToken } = await tokenRes.json();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-        if (accessToken) {
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
-            {
-              headers: { Authorization: `Bearer ${accessToken}` },
-            }
-          );
-
-          if (!res.ok) throw new Error("No se pudo obtener perfil");
+        if (!res.ok) {
           const data = await res.json();
-
-          dispatch(
-            setUser({
-              user: data,
-              token: accessToken,
-              roles: [data.role || "parent"],
-            })
-          );
-
-          if (
-            data.firstName &&
-            data.lastName &&
-            data.phone &&
-            data.countryCode
-          ) {
-            router.push(
-              data.role === "admin" ? "/admin/dashboard" : "/dashboard"
-            );
-            return;
-          }
-
-          if (data.countryCode) {
-            setCountryCode(data.countryCode);
-            const matched = countries.find(
-              (c) => c.iso2.toUpperCase() === data.countryCode
-            );
-            if (matched) setSelectedCountry(matched);
-          }
+          throw new Error(data.message || "Error al obtener datos del perfil");
         }
+
+        const data = await res.json();
+
+        dispatch(
+          setUser({
+            user: data,
+            token,
+            roles: [data.role || "parent"],
+          })
+        );
+
+        // ✅ Si el perfil ya está completo, redirigir inmediatamente
+        if (data.firstName && data.lastName && data.phone) {
+          if (data.role === "admin") {
+            router.push("/admin/dashboard");
+          } else if (data.parentalAccountId) {
+            router.push("/dashboard");
+          } else {
+            router.push("/onboarding/family");
+          }
+          return;
+        }
+
+        // Precargar campos para completar perfil
+        if (data.countryCode) {
+          setCountryCode(data.countryCode);
+          const match = countries.find(
+            (c) => c.iso2.toUpperCase() === data.countryCode
+          );
+          if (match) setSelectedCountry(match);
+        }
+
+        if (data.address) setAddress((prev) => ({ ...prev, ...data.address }));
+        if (data.firstName) setFirstName(data.firstName);
+        if (data.lastName) setLastName(data.lastName);
+        if (data.phone) setPhone(data.phone);
       } catch (err) {
         logFetchError(
-          "Precargar perfil",
-          err instanceof Error ? err.message : "Error desconocido"
+          err instanceof Error ? err : new Error("Error desconocido"),
+          "Precargar perfil"
         );
       } finally {
         setIsLoaded(true);
       }
     };
 
-    fetchData();
-  }, [router, countries, dispatch]);
+    preload();
+  }, [token, dispatch, countries, router]); // ✅ sin storedUser
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!countryCode) {
-      setError("Debes seleccionar un país.");
-      return;
-    }
+    if (!countryCode) return setError("Debes seleccionar un país.");
+    if (!validatePhone(phone, countryCode))
+      return setError(
+        "Número de teléfono no válido para el país seleccionado."
+      );
 
-    if (!validatePhone(phone, countryCode)) {
-      setError("Número de teléfono no válido para el país seleccionado.");
+    if (!token) {
+      setError("Token no disponible.");
       return;
     }
 
     try {
-      const tokenRes = await fetch("/api/auth/token");
-      const { accessToken } = await tokenRes.json();
-
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
         {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -141,17 +147,10 @@ export default function ProfilePage() {
       }
 
       const data = await res.json();
-      dispatch(
-        setUser({
-          user: data,
-          token: accessToken,
-          roles: [data.role || "parent"],
-        })
-      );
+      dispatch(setUser({ user: data, token, roles }));
 
-      router.push(
-        data.role === "admin" ? "/admin/dashboard" : "/onboarding/family"
-      );
+      // Redirige según estado del perfil y cuenta
+      redirectIfProfileComplete();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     }
@@ -230,7 +229,6 @@ export default function ProfilePage() {
         />
 
         {error && <p className={styles.error}>{error}</p>}
-
         <button type="submit" className={styles.button}>
           Guardar y continuar
         </button>

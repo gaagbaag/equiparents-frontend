@@ -9,6 +9,7 @@ import { handleFetchErrors } from "@/utils/handleFetchErrors";
 import { logFetchError } from "@/utils/logFetchError";
 import FamilyOptions from "@/components/onboarding/FamilyOptions";
 import ExpiredInviteMessage from "@/components/onboarding/ExpiredInviteMessage";
+import { useOnce } from "@/hooks/useOnce";
 
 export default function FamilyPage() {
   const router = useRouter();
@@ -46,11 +47,41 @@ export default function FamilyPage() {
       }
     };
 
-    fetchExpired();
+    const checkParentalAccount = async () => {
+      try {
+        const tokenRes = await fetch("/api/auth/token");
+        const { accessToken } = await tokenRes.json();
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/parental-accounts/my-account`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.id) {
+            router.replace("/dashboard");
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error al obtener cuenta parental:", err);
+      }
+    };
+
+    useOnce(() => {
+      checkParentalAccount();
+      fetchExpired();
+    });
+
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [router]);
 
   const handleCreate = async () => {
     setLoading(true);
@@ -92,6 +123,10 @@ export default function FamilyPage() {
     }
   };
 
+  const handleJoinWithCode = () => {
+    router.push("/onboarding/invite");
+  };
+
   return (
     <main className="container page-center">
       <h2 className="heading-lg">Configura tu cuenta parental</h2>
@@ -105,6 +140,13 @@ export default function FamilyPage() {
         error={error}
         router={router}
       />
+
+      <button
+        className="button button-secondary mt-4"
+        onClick={handleJoinWithCode}
+      >
+        Unirme con código de invitación
+      </button>
     </main>
   );
 }

@@ -10,7 +10,11 @@ export interface ExtendedAuthUser {
   name: string;
   email: string;
   picture?: string;
-  firstName: string;
-  lastName: string;
-  parentalAccountId: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  countryCode?: string;
+  address?: any; // ← agrega esto si usas dirección
+  parentalAccountId?: string;
+  role?: "parent" | "admin";
 }

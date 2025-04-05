@@ -15,13 +15,12 @@ export default function RequireProfileComplete({
   const user = useAppSelector((state) => state.auth.user) as ExtendedAuthUser;
 
   useEffect(() => {
-    // Validación estricta del perfil
     const isProfileIncomplete =
       !user?.firstName || !user?.lastName || !user?.phone || !user?.countryCode;
 
     if (isProfileIncomplete) {
       console.warn("🔒 Perfil incompleto. Redirigiendo a /onboarding/profile");
-      router.push("/onboarding/profile");
+      router.replace("/onboarding/profile");
     }
   }, [router, user]);
 

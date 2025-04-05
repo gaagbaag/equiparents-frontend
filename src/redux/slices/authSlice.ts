@@ -27,9 +27,7 @@ const authSlice = createSlice({
         roles: string[];
       }>
     ) {
-      console.log("🔐 setUser llamado con:", action.payload);
-
-      if (!action.payload.token || action.payload.token.trim() === "") {
+      if (!action.payload.token) {
         console.warn("⚠️ setUser fue llamado sin token. Evitado.");
         return;
       }

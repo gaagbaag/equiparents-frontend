@@ -10,21 +10,20 @@ export default async function fetchWithToken(
 ): Promise<Response> {
   try {
     // 📡 Este endpoint recupera el token desde la cookie `appSession`.
-    // Es seguro y útil en el cliente porque no puedes acceder directamente al JWT desde el contexto de App Router.
     const tokenRes = await fetch("/api/auth/token");
 
     if (!tokenRes.ok) {
       throw new Error("No se pudo obtener el token");
     }
 
-    const { accessToken } = await tokenRes.json();
+    const data = await tokenRes.json();
+    const accessToken = data.token || data.accessToken; // ✅ Soporta ambas claves
 
     if (!accessToken || accessToken.length < 10) {
       throw new Error("Token inválido o vacío");
     }
 
     // 🔐 Agrega el token al header Authorization
-    // Este paso es crucial para que el backend reconozca al usuario autenticado. El middleware `checkJwt` espera este header.
     const headers = new Headers(options.headers);
     headers.set("Authorization", `Bearer ${accessToken}`);
 

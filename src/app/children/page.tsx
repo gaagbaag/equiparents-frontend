@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { createChild } from "@/redux/thunks/childrenThunks";
-import { setCurrentChild } from "@/redux/childrenSlice";
+import { setCurrentChild } from "@/redux/slices/childrenSlice";
 import type { Child } from "@/types/child";
 
 export default function AddChildPage() {

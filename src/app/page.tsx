@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 export default function HomePage() {
-  const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -16,11 +14,11 @@ export default function HomePage() {
         if (!res.ok) throw new Error("No se pudo obtener la sesión");
 
         const data = await res.json();
-        setSession(data);
 
-        // ✅ Si existe token (el usuario viene de Auth0), redirigimos
-        if (data?.token) {
+        if (data?.user) {
+          console.log("✅ Usuario autenticado, redirigiendo a onboarding...");
           router.push("/onboarding");
+          return;
         }
       } catch (err) {
         console.error("Error al obtener la sesión:", err);

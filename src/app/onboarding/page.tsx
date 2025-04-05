@@ -1,44 +1,37 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
-import { setUser } from "@/redux/slices/authSlice";
+import { useAppDispatch } from "@/redux/hooks";
+import { fetchAndSetSession } from "@/redux/thunks/fetchAndSetSession";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+
+  const [checked, setChecked] = useState(false); // ✅ estado para evitar loops o dobles renderizados
 
   useEffect(() => {
     console.log("🚀 Entró a /onboarding");
 
     const checkSession = async () => {
       try {
-        const res = await fetch("/api/session");
-        const data = await res.json();
-        console.log("🧾 Datos de sesión:", data);
-
-        if (data?.user && data?.token && data?.roles) {
-          dispatch(
-            setUser({
-              user: data.user,
-              token: data.token,
-              roles: data.roles,
-            })
-          );
-
-          console.log("➡️ Redirigiendo a /onboarding/profile");
-          router.push("/onboarding/profile");
-        } else {
-          console.warn("⚠️ No hay sesión activa o token incompleto");
-        }
+        await dispatch(fetchAndSetSession()).unwrap();
+        console.log("➡️ Redirigiendo a /onboarding/profile");
+        router.push("/onboarding/profile");
       } catch (err) {
-        console.error("❌ Error al verificar sesión:", err);
+        console.warn("⚠️ No hay sesión activa o falló sesión:", err);
+      } finally {
+        setChecked(true);
       }
     };
 
     checkSession();
   }, [dispatch, router]);
+
+  if (!checked) {
+    return <div className="p-4 text-center">⏳ Verificando sesión...</div>;
+  }
 
   return (
     <main className="page-center">

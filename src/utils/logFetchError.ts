@@ -1,4 +1,4 @@
-export const logFetchError = (context: string, error: any) => {
+export const logFetchError = (error: any, context: string) => {
   if (error instanceof Error) {
     console.error(`⚠️ Error en ${context}:`, error.message);
   } else {
