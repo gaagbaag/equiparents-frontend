@@ -1,16 +1,19 @@
-// app/dashboard/layout.tsx
 "use client";
 
 import { useState } from "react";
-import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
-import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
+import Header from "@/components/layout/Header";
+import ProtectedLayout from "@/components/layout/ProtectedLayout";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <AuthenticatedLayout>
+    <ProtectedLayout allowedRoles={["admin"]}>
       <div className="flex h-screen">
         <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
         <div className="flex-1">
@@ -18,6 +21,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <main className="p-4">{children}</main>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </ProtectedLayout>
   );
 }

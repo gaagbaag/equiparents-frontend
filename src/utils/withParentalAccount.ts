@@ -1,6 +1,6 @@
 // src/utils/withParentalAccount.ts
 import type { Child } from "@/types/child";
-import type { ExtendedAuthUser } from "@/types/auth";
+import type { ExtendedAuthUser } from "@/types";
 
 export function withParentalAccount<T extends Partial<Child>>(
   child: T,

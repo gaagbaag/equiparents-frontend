@@ -1,75 +1,38 @@
-import { fetchAllChildren } from "./childrenThunks";
+// src/redux/thunks/authThunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { RootState } from "../store";
 import { setUser } from "../slices/authSlice";
-import type { ExtendedAuthUser } from "@/types/auth";
+import type { RootState } from "../store";
+import type { AuthUser } from "@/types";
 
-// 🔄 Obtener usuario actual desde /api/session
-export const fetchCurrentUser = createAsyncThunk<
-  void,
-  void,
-  { state: RootState }
->(
-  "auth/fetchCurrentUser",
-  async (_, { dispatch, getState, rejectWithValue }) => {
-    const state = getState();
-    const token = state.auth.token;
-
-    if (!token) {
-      console.warn("❌ No hay token para obtener el usuario");
-      return rejectWithValue("Token no disponible");
-    }
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok)
-        throw new Error("No se pudo obtener el usuario desde backend");
-
-      const data = await res.json();
-
-      console.log("✅ Usuario desde backend:", data);
-
-      dispatch(
-        setUser({
-          user: {
-            ...data,
-            sub: state.auth.user?.sub ?? "", // Conserva sub
-          },
-          token,
-          roles: [data.role], // ← ¡desde base de datos!
-        })
-      );
-    } catch (err: any) {
-      console.error("❌ Error en fetchCurrentUser:", err.message);
-      return rejectWithValue(err.message);
-    }
-  }
-);
-
-// thunk: updateUserProfile
+// 🔁 Thunk para actualizar perfil del usuario
 export const updateUserProfile = createAsyncThunk<
-  ExtendedAuthUser,
+  AuthUser,
   {
     firstName: string;
     lastName: string;
-    email?: string;
+    phone: string;
+    countryCode: string;
+    countryDialCode: string;
+    address: {
+      country: string;
+      state: string;
+      city: string;
+      zipCode: string;
+      street: string;
+      number: string;
+      departmentNumber?: string;
+    };
   },
   { state: RootState }
 >(
   "auth/updateUserProfile",
   async (updatedData, { getState, dispatch, rejectWithValue }) => {
-    const state = getState();
-    const token = state.auth.token;
+    const token = getState().auth.token;
+    const roles = getState().auth.roles;
 
-    if (!token) return rejectWithValue("Token no disponible");
+    if (!token?.trim()) {
+      return rejectWithValue("Token no disponible");
+    }
 
     try {
       const res = await fetch(
@@ -89,19 +52,14 @@ export const updateUserProfile = createAsyncThunk<
         throw new Error(error.message || "Error al actualizar perfil");
       }
 
-      const data: ExtendedAuthUser & { roles: string[] } = await res.json();
+      const data: AuthUser = await res.json();
+      dispatch(setUser({ user: data, token, roles }));
 
-      console.log("✅ fetchCurrentUser completado", {
-        user: data,
-        token,
-        roles: data.roles,
-      });
-
-      dispatch(setUser({ user: data, token, roles: data.roles }));
+      console.log("✅ Perfil actualizado:", data);
       return data;
     } catch (err: any) {
       console.error("❌ Error en updateUserProfile:", err.message);
-      return rejectWithValue(err.message);
+      return rejectWithValue("Error al actualizar perfil");
     }
   }
 );

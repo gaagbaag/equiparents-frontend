@@ -10,7 +10,8 @@ export default function HomePage() {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const res = await fetch("/api/session");
+        const res = await fetch("/api/session"); // ✅ desde Next.js, sin incluir cookies manualmente
+
         if (!res.ok) throw new Error("No se pudo obtener la sesión");
 
         const data = await res.json();

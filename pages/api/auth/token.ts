@@ -23,16 +23,7 @@ export default async function handler(
     if (process.env.NODE_ENV === "development") {
       try {
         const decoded = jwtDecode<CustomClaims>(accessToken);
-
-        if (!decoded["https://equiparents.api/roles"]) {
-          console.warn("⚠️ Token sin claim de roles");
-        }
-
-        if (!decoded["https://equiparents.api/parentalAccountId"]) {
-          console.warn("⚠️ Token sin claim de parentalAccountId");
-        }
-
-        console.log("✅ Token con claims válidos:", decoded);
+        console.log("✅ Token decodificado:", decoded);
       } catch (err) {
         console.error("❌ No se pudo decodificar el token:", err);
       }

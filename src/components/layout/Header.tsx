@@ -1,18 +1,23 @@
+// components/layout/Header.tsx
 "use client";
 
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
-  const { user, roles, isAuthenticated } = useSelector(
+  const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
 
-  if (!isAuthenticated) return null;
-
-  const role = roles[0];
+  const role = user?.role;
   const userAuth0Id = user?.sub;
+  const pathname = usePathname();
+
+  if (!isAuthenticated || !role) return null;
+
+  const isOnDashboard = pathname === "/dashboard";
 
   return (
     <header className="w-full bg-white shadow-md mb-6 p-4 flex justify-between items-center">
@@ -42,7 +47,12 @@ export default function Header() {
 
         {role === "parent" && (
           <>
-            <Link href="/dashboard" className="hover:underline">
+            <Link
+              href="/dashboard"
+              className={`hover:underline ${
+                isOnDashboard ? "text-gray-400 pointer-events-none" : ""
+              }`}
+            >
               Dashboard
             </Link>
             <Link href="/calendar" className="hover:underline">

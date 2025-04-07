@@ -17,7 +17,12 @@ export function useVerifySession(options: VerifySessionOptions) {
   const verifySession = useCallback(async () => {
     console.log("Ejecutando verifySession");
     try {
-      const res = await fetch("/api/session");
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/session`,
+        {
+          credentials: "include",
+        }
+      );
       if (!res.ok) throw new Error("Error al obtener sesión");
 
       const { user, accessToken, roles } = await res.json();

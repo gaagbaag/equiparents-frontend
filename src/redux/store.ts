@@ -1,6 +1,5 @@
-// src/redux/store.ts
 import { configureStore } from "@reduxjs/toolkit";
-import { authReducer } from "./slices/authSlice";
+import authReducer from "./slices/authSlice"; // ❗️ No debe ser con llaves
 import parentalAccountReducer from "./slices/parentalAccountSlice";
 import calendarReducer from "./slices/calendarSlice";
 import invitationReducer from "./slices/invitationSlice";
@@ -16,7 +15,7 @@ export const store = configureStore({
   },
 });
 
-// Tipos para usar en thunks y selectores
+// Tipos globales para Redux
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 

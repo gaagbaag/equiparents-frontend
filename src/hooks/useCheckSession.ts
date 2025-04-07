@@ -1,7 +1,7 @@
-// src/hooks/useCheckSession.ts
+// hooks/useCheckSession.ts
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { setUser } from "@/redux/slices/authSlice";
@@ -10,47 +10,49 @@ import { getRedirectRoute } from "@/utils/getRedirectRoute";
 export function useCheckSession() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { token } = useAppSelector((state) => state.auth);
-
+  const { token, user, isAuthenticated } = useAppSelector(
+    (state) => state.auth
+  );
   const [loading, setLoading] = useState(true);
+  const hasChecked = useRef(false); // ✅ para evitar múltiples llamadas
 
   useEffect(() => {
+    if (hasChecked.current) return; // ya validado
+
     const validateSession = async () => {
-      if (!token) {
-        console.warn("⚠️ No token encontrado, redirigiendo a login.");
-        router.push("/api/auth/login");
+      hasChecked.current = true;
+
+      if (isAuthenticated && user && token) {
+        setLoading(false);
         return;
       }
 
       try {
-        const sessionRes = await fetch("/api/session", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetch("/api/session");
+        if (!res.ok) throw new Error("No se pudo validar la sesión");
 
-        if (!sessionRes.ok) {
-          throw new Error("No se pudo validar la sesión");
-        }
+        const { user, roles = [] } = await res.json();
 
-        const sessionData = await sessionRes.json();
-        const { user, roles = [] } = sessionData;
+        if (!user) throw new Error("Usuario no encontrado en la sesión");
 
-        if (user) {
-          dispatch(setUser({ user, token, roles }));
-        } else {
-          throw new Error("Usuario no encontrado en la sesión");
-        }
+        dispatch(setUser({ user, token: "", roles }));
+        console.log("✅ Sesión validada desde frontend");
       } catch (err) {
         console.error("❌ Error al validar sesión:", err);
-        router.push(getRedirectRoute([])); // fallback
+
+        if (window.location.pathname !== "/api/auth/login") {
+          const redirectTo = getRedirectRoute([]);
+          if (window.location.pathname !== redirectTo) {
+            router.replace(redirectTo);
+          }
+        }
       } finally {
         setLoading(false);
       }
     };
 
     validateSession();
-  }, [token, dispatch, router]);
+  }, [token, user, isAuthenticated, dispatch, router]);
 
   return { loading };
 }

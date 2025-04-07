@@ -11,8 +11,12 @@ export default function useSyncUserWithBackend(): { isSyncing: boolean } {
     const syncUser = async () => {
       try {
         console.log("🔄 Iniciando sincronización con backend...");
-        const sessionRes = await fetch("/api/session");
-
+        const sessionRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/session`,
+          {
+            credentials: "include",
+          }
+        );
         if (!sessionRes.ok) {
           console.warn("⚠️ No se encontró sesión");
           setIsSyncing(false);

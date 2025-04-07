@@ -1,3 +1,4 @@
+// src/components/layout/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -12,18 +13,19 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, setOpen }: SidebarProps) {
-  const { roles, user, isAuthenticated } = useSelector(
+  const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-
-  const role = roles[0];
+  const role = user?.role;
   const userAuth0Id = user?.sub;
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || !role) {
+    console.warn("⛔ Roles no disponibles aún en Sidebar");
+    return null;
+  }
 
   return (
     <>
-      {/* Botón menú hamburguesa */}
       <button
         className="md:hidden fixed top-4 left-4 z-50 bg-white shadow p-2 rounded"
         onClick={() => setOpen(!open)}
@@ -31,7 +33,6 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         {open ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* 🔲 Overlay de fondo en móvil */}
       {open && (
         <div
           className="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden"
@@ -39,7 +40,6 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
         />
       )}
 
-      {/* Panel lateral */}
       <aside
         className={`fixed top-0 left-0 h-full w-64 bg-gray-100 shadow-md p-4 z-40 transform transition-transform duration-200 ease-in-out 
         ${open ? "translate-x-0" : "-translate-x-full"} 

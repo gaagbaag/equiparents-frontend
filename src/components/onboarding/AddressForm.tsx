@@ -1,94 +1,110 @@
-// src/components/onboarding/AddressForm.tsx
-"use client";
+import React from "react";
+import styles from "@/styles/components/AddressForm.module.css";
 
-import { ChangeEvent } from "react";
+interface Address {
+  country: string;
+  state: string;
+  city: string;
+  zipCode: string;
+  street: string;
+  number: string;
+  departmentNumber: string;
+}
+
+interface AddressFormProps {
+  address: Address;
+  onChange: (field: keyof Address, value: string) => void;
+  errors: Partial<Record<keyof Address, string>>;
+}
 
 export default function AddressForm({
   address,
   onChange,
   errors,
-}: {
-  address: {
-    country: string;
-    state?: string;
-    city: string;
-    zipCode?: string;
-    street?: string;
-    number?: string;
-    departmentNumber?: string; // Añadido aquí
-  };
-  onChange: (field: string, value: string) => void;
-  errors: Record<string, string>;
-}) {
+}: AddressFormProps) {
   return (
-    <div>
-      <label>
-        Calle
+    <div className={styles.container}>
+      <h2 className={styles.title}>Dirección</h2>
+
+      <label className={styles.label}>
+        País
         <input
           type="text"
-          value={address.street}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            onChange("street", e.target.value)
-          }
+          className={styles.input}
+          value={address.country}
+          onChange={(e) => onChange("country", e.target.value)}
+          disabled={false} // ✅ permite edición si el usuario desea ajustarlo
         />
+        {errors.country && <p className={styles.error}>{errors.country}</p>}
       </label>
 
-      <label>
-        Número
+      <label className={styles.label}>
+        Estado / Región
         <input
           type="text"
-          value={address.number}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            onChange("number", e.target.value)
-          }
+          className={styles.input}
+          value={address.state}
+          onChange={(e) => onChange("state", e.target.value)}
         />
+        {errors.state && <p className={styles.error}>{errors.state}</p>}
       </label>
 
-      <label>
-        Número de Departamento
-        <input
-          type="text"
-          value={address.departmentNumber}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            onChange("departmentNumber", e.target.value)
-          }
-        />
-      </label>
-
-      <label>
+      <label className={styles.label}>
         Ciudad
         <input
           type="text"
+          className={styles.input}
           value={address.city}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            onChange("city", e.target.value)
-          }
+          onChange={(e) => onChange("city", e.target.value)}
         />
+        {errors.city && <p className={styles.error}>{errors.city}</p>}
       </label>
 
-      <label>
-        Estado
+      <label className={styles.label}>
+        Código postal
         <input
           type="text"
-          value={address.state}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            onChange("state", e.target.value)
-          }
-        />
-      </label>
-
-      <label>
-        Código Postal
-        <input
-          type="text"
+          className={styles.input}
           value={address.zipCode}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            onChange("zipCode", e.target.value)
-          }
+          onChange={(e) => onChange("zipCode", e.target.value)}
         />
+        {errors.zipCode && <p className={styles.error}>{errors.zipCode}</p>}
       </label>
 
-      {errors.address && <p>{errors.address}</p>}
+      <label className={styles.label}>
+        Calle
+        <input
+          type="text"
+          className={styles.input}
+          value={address.street}
+          onChange={(e) => onChange("street", e.target.value)}
+        />
+        {errors.street && <p className={styles.error}>{errors.street}</p>}
+      </label>
+
+      <label className={styles.label}>
+        Número
+        <input
+          type="text"
+          className={styles.input}
+          value={address.number}
+          onChange={(e) => onChange("number", e.target.value)}
+        />
+        {errors.number && <p className={styles.error}>{errors.number}</p>}
+      </label>
+
+      <label className={styles.label}>
+        Departamento (opcional)
+        <input
+          type="text"
+          className={styles.input}
+          value={address.departmentNumber}
+          onChange={(e) => onChange("departmentNumber", e.target.value)}
+        />
+        {errors.departmentNumber && (
+          <p className={styles.error}>{errors.departmentNumber}</p>
+        )}
+      </label>
     </div>
   );
 }

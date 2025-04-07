@@ -1,43 +1,39 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { ExtendedAuthUser } from "@/types/auth";
+import type { AuthUser } from "@/types";
 
 interface AuthState {
+  user: AuthUser | null;
   token: string | null;
-  user: ExtendedAuthUser | null;
+  roles: ("parent" | "admin")[];
   isAuthenticated: boolean;
-  roles: string[];
 }
 
 const initialState: AuthState = {
-  token: null,
   user: null,
-  isAuthenticated: false,
+  token: null,
   roles: [],
+  isAuthenticated: false,
 };
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setUser(
+    setUser: (
       state,
       action: PayloadAction<{
-        user: ExtendedAuthUser;
+        user: AuthUser;
         token: string;
-        roles: string[];
+        roles: ("parent" | "admin")[];
       }>
-    ) {
-      if (!action.payload.token) {
-        console.warn("⚠️ setUser fue llamado sin token. Evitado.");
-        return;
-      }
-
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.roles = action.payload.roles;
+    ) => {
+      const { user, token, roles } = action.payload;
+      state.user = user;
+      state.token = token;
+      state.roles = roles;
       state.isAuthenticated = true;
     },
-    logout(state) {
+    logout: (state) => {
       state.user = null;
       state.token = null;
       state.roles = [];
@@ -47,4 +43,4 @@ const authSlice = createSlice({
 });
 
 export const { setUser, logout } = authSlice.actions;
-export const authReducer = authSlice.reducer;
+export default authSlice.reducer;

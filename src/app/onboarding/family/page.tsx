@@ -115,7 +115,7 @@ export default function FamilyPage() {
         throw new Error(data.message || "Error al crear la cuenta parental");
       }
 
-      router.push("/dashboard");
+      router.push("/dashboard/parent");
     } catch (err: any) {
       setError(err.message);
     } finally {

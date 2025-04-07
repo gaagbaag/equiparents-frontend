@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import type { RootState, AppDispatch } from "@/redux/store";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { fetchParentalAccount } from "@/redux/slices/parentalAccountSlice";
 import fetchWithToken from "@/utils/fetchWithToken";
 
@@ -21,12 +20,12 @@ export default function DashboardOverview({
   onHistoryRefresh,
 }: DashboardOverviewProps) {
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
 
-  const { children, users, status } = useSelector(
-    (state: RootState) => state.parentalAccount
+  const { children, users, status } = useAppSelector(
+    (state) => state.parentalAccount
   );
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
@@ -57,9 +56,16 @@ export default function DashboardOverview({
   };
 
   useEffect(() => {
+    if (!isAuthenticated || !user?.parentalAccountId) return;
+
     dispatch(fetchParentalAccount());
     fetchActiveInvitation();
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated, user?.parentalAccountId]);
+
+  if (!isAuthenticated || !user) {
+    router.push("/api/auth/login");
+    return null;
+  }
 
   if (status === "loading") return <p>Cargando resumen...</p>;
 
@@ -115,7 +121,7 @@ export default function DashboardOverview({
     <>
       <section className={styles.overviewCard}>
         <h2>
-          👋 Hola, {user?.firstName} {user?.lastName}
+          👋 Hola, {user.firstName} {user.lastName}
         </h2>
         <p>
           Tienes {membersCount} miembro(s) en la cuenta parental y{" "}

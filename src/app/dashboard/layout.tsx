@@ -1,16 +1,23 @@
-import RequireAuth from "@/components/auth/RequireAuth";
-import RequireProfileComplete from "@/components/auth/RequireProfileComplete";
+// app/dashboard/layout.tsx
+"use client";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import { useState } from "react";
+import Header from "@/components/layout/Header";
+import Sidebar from "@/components/layout/Sidebar";
+import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <RequireAuth>
-      <RequireProfileComplete>
-        <div className="flex h-screen">{/* Sidebar y contenido */}</div>
-      </RequireProfileComplete>
-    </RequireAuth>
+    <AuthenticatedLayout>
+      <div className="flex h-screen">
+        <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+        <div className="flex-1">
+          <Header />
+          <main className="p-4">{children}</main>
+        </div>
+      </div>
+    </AuthenticatedLayout>
   );
 }

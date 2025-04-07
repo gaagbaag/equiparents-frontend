@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { setUser } from "@/redux/slices/authSlice";
-import { getRedirectRoute } from "@/utils/getRedirectRoute";
-import { logFetchError } from "@/utils/logFetchError";
 import { redirectIfProfileComplete } from "@/utils/redirectIfProfileComplete";
 import { useCountries, Country } from "@/hooks/useCountries";
 import { validatePhone } from "@/utils/validatePhone";
@@ -12,17 +10,17 @@ import { useAppSelector, useAppDispatch } from "@/redux/hooks";
 import { CountryCode } from "libphonenumber-js";
 import styles from "@/styles/pages/profile.module.css";
 import AddressForm from "@/components/onboarding/AddressForm";
+import type { ExtendedAuthUser } from "@/types"; // ✅ agregar
 
 export default function ProfilePage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const countries = useCountries();
 
-  const token = useAppSelector((state) => state.auth.token);
-  const roles = useAppSelector((state) => state.auth.roles);
+  const { token, user, roles } = useAppSelector((state) => state.auth);
 
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-  const [countryCode, setCountryCode] = useState<CountryCode | "">("");
+  const [countryDialCode, setCountryDialCode] = useState<string>("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -40,79 +38,46 @@ export default function ProfilePage() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!token) {
+    if (!user) {
       router.push("/api/auth/login");
       return;
     }
 
-    const preload = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+    // ✅ tipado explícito para evitar conflictos
+    redirectIfProfileComplete(user as ExtendedAuthUser, router);
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || "Error al obtener datos del perfil");
-        }
+    setFirstName(user.firstName || "");
+    setLastName(user.lastName || "");
+    setPhone(user.phone || "");
 
-        const data = await res.json();
-
-        dispatch(
-          setUser({
-            user: data,
-            token,
-            roles: [data.role || "parent"],
-          })
-        );
-
-        // ✅ Si el perfil ya está completo, redirigir inmediatamente
-        if (data.firstName && data.lastName && data.phone) {
-          if (data.role === "admin") {
-            router.push("/admin/dashboard");
-          } else if (data.parentalAccountId) {
-            router.push("/dashboard");
-          } else {
-            router.push("/onboarding/family");
-          }
-          return;
-        }
-
-        // Precargar campos para completar perfil
-        if (data.countryCode) {
-          setCountryCode(data.countryCode);
-          const match = countries.find(
-            (c) => c.iso2.toUpperCase() === data.countryCode
-          );
-          if (match) setSelectedCountry(match);
-        }
-
-        if (data.address) setAddress((prev) => ({ ...prev, ...data.address }));
-        if (data.firstName) setFirstName(data.firstName);
-        if (data.lastName) setLastName(data.lastName);
-        if (data.phone) setPhone(data.phone);
-      } catch (err) {
-        logFetchError(
-          err instanceof Error ? err : new Error("Error desconocido"),
-          "Precargar perfil"
-        );
-      } finally {
-        setIsLoaded(true);
+    if (user.countryDialCode && countries.length > 0) {
+      const match = countries.find(
+        (c) => c.dialCode === user.countryDialCode?.replace("+", "")
+      );
+      if (match) {
+        setSelectedCountry(match);
+        setAddress((prev) => ({ ...prev, country: match.name }));
       }
-    };
+    }
 
-    preload();
-  }, [token, dispatch, countries, router]); // ✅ sin storedUser
+    if (user.address) {
+      setAddress((prev) => ({ ...prev, ...user.address }));
+    }
+
+    setIsLoaded(true);
+  }, [user, countries, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!countryCode) return setError("Debes seleccionar un país.");
-    if (!validatePhone(phone, countryCode))
+    if (!selectedCountry)
+      return setError("Debes seleccionar un país para validar el teléfono.");
+
+    const code = selectedCountry.iso2.toUpperCase() as CountryCode;
+    const dial = `+${selectedCountry.dialCode}`;
+
+    if (!validatePhone(phone, code))
       return setError(
         "Número de teléfono no válido para el país seleccionado."
       );
@@ -121,6 +86,20 @@ export default function ProfilePage() {
       setError("Token no disponible.");
       return;
     }
+
+    const finalAddress = {
+      ...address,
+      country: address.country || selectedCountry.name,
+    };
+
+    const payload = {
+      firstName,
+      lastName,
+      phone,
+      countryCode: code,
+      countryDialCode: dial,
+      address: finalAddress,
+    };
 
     try {
       const res = await fetch(
@@ -131,13 +110,7 @@ export default function ProfilePage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            firstName,
-            lastName,
-            phone,
-            countryCode,
-            address,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -149,8 +122,7 @@ export default function ProfilePage() {
       const data = await res.json();
       dispatch(setUser({ user: data, token, roles }));
 
-      // Redirige según estado del perfil y cuenta
-      redirectIfProfileComplete();
+      redirectIfProfileComplete(data, router);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
     }
@@ -187,14 +159,19 @@ export default function ProfilePage() {
         <label className={styles.label}>
           País
           <select
-            value={selectedCountry?.iso2.toUpperCase() || ""}
+            value={selectedCountry?.dialCode || ""}
             onChange={(e) => {
               const selected = countries.find(
-                (c) => c.iso2.toUpperCase() === e.target.value
+                (c) => c.dialCode === e.target.value
               );
               if (selected) {
                 setSelectedCountry(selected);
-                setCountryCode(selected.iso2.toUpperCase() as CountryCode);
+                setCountryDialCode(`+${selected.dialCode}`);
+                setPhone("");
+                setAddress((prev) => ({
+                  ...prev,
+                  country: selected.name,
+                }));
               }
             }}
             required
@@ -202,7 +179,7 @@ export default function ProfilePage() {
           >
             <option value="">Selecciona un país</option>
             {countries.map((country) => (
-              <option key={country.iso2} value={country.iso2.toUpperCase()}>
+              <option key={country.iso2} value={country.dialCode}>
                 {country.name} (+{country.dialCode})
               </option>
             ))}

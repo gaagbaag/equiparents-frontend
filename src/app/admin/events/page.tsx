@@ -10,7 +10,12 @@ export default function AdminEventsPage() {
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
-        const res = await fetch("/api/session");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/session`,
+          {
+            credentials: "include",
+          }
+        );
         const data = await res.json();
         if (!data.user || data.user.role !== "admin") {
           router.push("/dashboard");

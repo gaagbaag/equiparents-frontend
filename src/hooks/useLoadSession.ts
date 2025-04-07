@@ -10,7 +10,12 @@ export default function useLoadSession() {
   useEffect(() => {
     const loadSession = async () => {
       try {
-        const res = await fetch("/api/session");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/session`,
+          {
+            credentials: "include",
+          }
+        );
         if (!res.ok) throw new Error("No session");
 
         const data = await res.json();

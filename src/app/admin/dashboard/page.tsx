@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAppSelector } from "@/redux/hooks";
 import { getRedirectRoute } from "@/utils/getRedirectRoute";
 
 type HistoryEntry = {
@@ -21,38 +22,20 @@ type AdminStats = {
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const { roles } = useAppSelector((state) => state.auth);
   const [data, setData] = useState<AdminStats | null>(null);
-  const [roles, setRoles] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const sessionRes = await fetch("/api/session");
-        const session = await sessionRes.json();
-        const userRoles = session?.roles || [];
-        setRoles(userRoles);
-
-        if (!userRoles.includes("admin")) {
-          router.push(getRedirectRoute(userRoles));
-        }
-      } catch (err) {
-        console.error("❌ Error al verificar sesión:", err);
-        setError("Error al verificar sesión.");
-        router.push(getRedirectRoute([]));
-      }
-    };
-    checkSession();
-  }, [router]);
-
-  useEffect(() => {
-    if (!roles?.includes("admin")) return;
+    if (!roles.includes("admin")) {
+      router.push(getRedirectRoute(roles));
+      return;
+    }
 
     const fetchStats = async () => {
       try {
         setIsLoading(true);
-
         const tokenRes = await fetch("/api/auth/token");
         const { accessToken } = await tokenRes.json();
 
@@ -63,12 +46,11 @@ export default function AdminDashboardPage() {
           }
         );
 
-        if (!res.ok) throw new Error("Error al obtener datos");
-
+        if (!res.ok) throw new Error("Error al obtener estadísticas");
         const stats = await res.json();
         setData(stats);
       } catch (err) {
-        console.error("❌ Error cargando stats:", err);
+        console.error("❌ Error cargando estadísticas:", err);
         setError("Error al cargar las estadísticas.");
       } finally {
         setIsLoading(false);
@@ -76,38 +58,41 @@ export default function AdminDashboardPage() {
     };
 
     fetchStats();
-  }, [roles]);
+  }, [roles, router]);
 
-  if (isLoading) return <p>Cargando estadísticas del sistema...</p>;
-  if (error) return <p>{error}</p>;
-  if (!data) return <p>No se encontraron estadísticas.</p>;
+  if (isLoading)
+    return <p className="p-4">Cargando estadísticas del sistema...</p>;
+  if (error) return <p className="p-4 text-red-500">{error}</p>;
+  if (!data) return <p className="p-4">No se encontraron estadísticas.</p>;
 
   return (
-    <main className="container">
-      <h1>📊 Panel de administración</h1>
+    <main className="p-4">
+      <h1 className="text-2xl font-bold mb-6">📊 Panel de administración</h1>
 
-      <div style={{ display: "flex", gap: "2rem", marginTop: "1.5rem" }}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <Stat label="Usuarios" value={data.users} />
         <Stat label="Cuentas parentales" value={data.accounts} />
         <Stat label="Hijos" value={data.children} />
       </div>
 
-      <section style={{ marginTop: "2.5rem" }}>
-        <h2>🕓 Últimas acciones</h2>
-        <ul style={{ paddingLeft: "1rem" }}>
+      <section>
+        <h2 className="text-xl font-semibold mb-4">🕓 Últimas acciones</h2>
+        <ul className="space-y-4">
           {data.history.map((h) => (
-            <li key={h.id} style={{ marginBottom: "0.75rem" }}>
-              <strong>{h.summary}</strong> —{" "}
-              {new Date(h.createdAt).toLocaleString("es-CL")}
+            <li key={h.id} className="bg-white p-4 rounded shadow-sm border">
+              <p className="font-medium">{h.summary}</p>
+              <p className="text-sm text-gray-600">
+                {new Date(h.createdAt).toLocaleString("es-CL")}
+              </p>
               {h.user && (
-                <div style={{ fontSize: "0.85rem", color: "#555" }}>
+                <p className="text-sm text-gray-500">
                   {h.user.firstName} {h.user.lastName} ({h.user.email})
-                </div>
+                </p>
               )}
               {h.category?.name && (
-                <div style={{ fontSize: "0.8rem", color: "#888" }}>
+                <p className="text-sm text-gray-400">
                   Categoría: {h.category.name}
-                </div>
+                </p>
               )}
             </li>
           ))}
@@ -119,18 +104,9 @@ export default function AdminDashboardPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div
-      style={{
-        padding: "1rem",
-        backgroundColor: "#f4f4f4",
-        borderRadius: "8px",
-        flex: "1",
-        textAlign: "center",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-      }}
-    >
-      <h3 style={{ margin: "0 0 0.5rem" }}>{label}</h3>
-      <p style={{ fontSize: "2rem", margin: 0 }}>{value}</p>
+    <div className="bg-gray-100 p-4 rounded shadow text-center">
+      <h3 className="text-lg font-semibold mb-2">{label}</h3>
+      <p className="text-2xl font-bold">{value}</p>
     </div>
   );
 }

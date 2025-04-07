@@ -19,7 +19,7 @@ type User = {
 export default function AdminUsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // Guardar estado del rol admin
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "parent">(
     "all"
@@ -30,34 +30,39 @@ export default function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 10;
 
-  // Verificación del rol admin
   useEffect(() => {
     const checkAdminAccess = async () => {
       try {
-        const sessionRes = await fetch("/api/session");
-        const user = await sessionRes.json();
-        console.log("📡 Respuesta de /api/session:", user);
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/session`,
+          {
+            credentials: "include",
+          }
+        );
+        const data = await res.json();
 
-        // Verificar si el rol de admin está presente en el array de roles
-        if (user?.roles && user.roles.includes("admin")) {
-          setIsAdmin(true); // Usuario tiene rol admin
+        console.log("📡 Respuesta de /api/session:", data);
+
+        if (data?.roles?.includes("admin")) {
+          setIsAdmin(true);
         } else {
-          setIsAdmin(false); // No tiene rol admin
-          console.log("🚫 El usuario no tiene rol de admin, redirigiendo...");
-          router.push("/dashboard"); // Redirige si no es admin
+          setIsAdmin(false);
+          console.warn("🚫 Usuario sin rol admin, redirigiendo...");
+          router.push("/dashboard");
         }
       } catch (err) {
-        console.error("Error al verificar sesión", err);
-        router.push("/dashboard"); // Si hay error en la verificación, redirigir
+        console.error("❌ Error al verificar sesión:", err);
+        setIsAdmin(false);
+        router.push("/dashboard");
       }
     };
+
     checkAdminAccess();
   }, [router]);
 
-  // Obtener usuarios
   useEffect(() => {
     const fetchUsers = async () => {
-      if (isAdmin === null) return; // Si aún no se ha validado el rol, no hacer la petición
+      if (!isAdmin) return;
 
       try {
         const tokenRes = await fetch("/api/auth/token");
@@ -80,9 +85,27 @@ export default function AdminUsersPage() {
     };
 
     fetchUsers();
-  }, [isAdmin]); // Dependemos de isAdmin para asegurarnos de que se valide antes de cargar los usuarios
+  }, [isAdmin]);
 
-  // Función para exportar a CSV
+  const filteredUsers = users.filter((u) => {
+    const nameMatch = `${u.firstName} ${u.lastName}`
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    const emailMatch = u.email.toLowerCase().includes(search.toLowerCase());
+    const roleMatch = roleFilter === "all" || u.role.name === roleFilter;
+    const accountMatch =
+      accountFilter === "all" ||
+      (accountFilter === "with" && u.parentalAccount) ||
+      (accountFilter === "without" && !u.parentalAccount);
+    return (nameMatch || emailMatch) && roleMatch && accountMatch;
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * usersPerPage,
+    currentPage * usersPerPage
+  );
+
   const exportToCSV = () => {
     const header = [
       "Nombre",
@@ -98,14 +121,12 @@ export default function AdminUsersPage() {
       u.parentalAccount?.name || "—",
       u.parentalAccount?.children.length.toString() || "0",
     ]);
-
     const csvContent = [header, ...rows]
       .map((row) => row.map((v) => `"${v}"`).join(","))
       .join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", "usuarios_equiparents.csv");
@@ -114,29 +135,6 @@ export default function AdminUsersPage() {
     document.body.removeChild(link);
   };
 
-  // Filtrar usuarios según los filtros
-  const filteredUsers = users.filter((u) => {
-    const nameMatch = `${u.firstName} ${u.lastName}`
-      .toLowerCase()
-      .includes(search.toLowerCase());
-    const emailMatch = u.email.toLowerCase().includes(search.toLowerCase());
-    const roleMatch = roleFilter === "all" || u.role.name === roleFilter;
-    const accountMatch =
-      accountFilter === "all" ||
-      (accountFilter === "with" && u.parentalAccount) ||
-      (accountFilter === "without" && !u.parentalAccount);
-
-    return (nameMatch || emailMatch) && roleMatch && accountMatch;
-  });
-
-  // Paginación de usuarios
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage
-  );
-
-  // Cambiar rol de usuario
   const handleChangeRole = async (user: User) => {
     const nextRole = user.role.name === "admin" ? "parent" : "admin";
     if (!confirm(`¿Cambiar rol de ${user.email} a ${nextRole}?`)) return;
@@ -159,7 +157,6 @@ export default function AdminUsersPage() {
     location.reload();
   };
 
-  // Desvincular usuario de cuenta parental
   const handleUnlink = async (user: User) => {
     if (!confirm(`¿Quitar a ${user.email} de su cuenta parental?`)) return;
 

@@ -1,10 +1,8 @@
-// src/components/auth/RequireProfileComplete.tsx
 "use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/redux/hooks";
-import { ExtendedAuthUser } from "@/types/auth";
 
 export default function RequireProfileComplete({
   children,
@@ -12,17 +10,22 @@ export default function RequireProfileComplete({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const user = useAppSelector((state) => state.auth.user) as ExtendedAuthUser;
+  const { user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    const isProfileIncomplete =
-      !user?.firstName || !user?.lastName || !user?.phone || !user?.countryCode;
+    if (!user) return;
 
-    if (isProfileIncomplete) {
-      console.warn("🔒 Perfil incompleto. Redirigiendo a /onboarding/profile");
+    const isProfileComplete =
+      !!user.firstName &&
+      !!user.lastName &&
+      !!user.phone &&
+      !!user.countryCode &&
+      !!user.countryDialCode;
+
+    if (!isProfileComplete) {
       router.replace("/onboarding/profile");
     }
-  }, [router, user]);
+  }, [user, router]);
 
   return <>{children}</>;
 }

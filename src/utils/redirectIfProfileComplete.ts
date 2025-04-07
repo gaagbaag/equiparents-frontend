@@ -1,20 +1,12 @@
-"use client";
+// utils/redirectIfProfileComplete.ts
 
-import { useRouter } from "next/navigation";
-import { useAppSelector } from "@/redux/hooks";
-import { ExtendedAuthUser } from "@/types/auth";
+import type { ExtendedAuthUser } from "@/types"; // ✅ cambio aquí
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
-/**
- * Redirige según el estado del perfil y la cuenta parental.
- * Puedes pasar un usuario explícitamente o usar el de Redux.
- */
-export function redirectIfProfileComplete(userArg?: ExtendedAuthUser) {
-  const router = useRouter();
-  const user =
-    userArg || (useAppSelector((state) => state.auth.user) as ExtendedAuthUser);
-
-  if (!user) return;
-
+export function redirectIfProfileComplete(
+  user: ExtendedAuthUser, // ✅ cambio aquí
+  router: AppRouterInstance
+) {
   const {
     firstName,
     lastName,
@@ -27,22 +19,53 @@ export function redirectIfProfileComplete(userArg?: ExtendedAuthUser) {
 
   const addressComplete =
     address &&
-    address.country &&
-    address.state &&
-    address.city &&
-    address.street &&
-    address.number;
+    typeof address.country === "string" &&
+    address.country.length > 0 &&
+    typeof address.state === "string" &&
+    address.state.length > 0 &&
+    typeof address.city === "string" &&
+    address.city.length > 0 &&
+    typeof address.street === "string" &&
+    address.street.length > 0 &&
+    typeof address.number === "string" &&
+    address.number.length > 0;
 
   const profileComplete =
-    firstName && lastName && phone && countryCode && addressComplete;
+    typeof firstName === "string" &&
+    firstName.length > 0 &&
+    typeof lastName === "string" &&
+    lastName.length > 0 &&
+    typeof phone === "string" &&
+    phone.length > 0 &&
+    typeof countryCode === "string" &&
+    countryCode.length > 0 &&
+    addressComplete;
+
+  console.log("📦 Datos de dirección recibidos:");
+  console.log({
+    address,
+    addressComplete,
+    campos: {
+      country: address?.country,
+      state: address?.state,
+      city: address?.city,
+      street: address?.street,
+      number: address?.number,
+    },
+  });
 
   if (profileComplete) {
     if (role === "admin") {
+      console.log("✅ Redirigiendo a admin dashboard");
       router.push("/admin/dashboard");
     } else if (parentalAccountId) {
-      router.push("/dashboard");
+      console.log("✅ Redirigiendo a dashboard parent");
+      router.push("/dashboard/parent");
     } else {
+      console.log("✅ Redirigiendo a onboarding family");
       router.push("/onboarding/family");
     }
+  } else {
+    console.warn("⛔ Perfil incompleto, no se redirige.");
   }
 }

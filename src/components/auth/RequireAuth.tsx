@@ -1,29 +1,29 @@
-// src/components/auth/RequireProfileComplete.tsx
 "use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/redux/hooks";
-import { ExtendedAuthUser } from "@/types/auth";
 
-export default function RequireProfileComplete({
-  children,
-}: {
+type RequireAuthProps = {
   children: React.ReactNode;
-}) {
+};
+
+export default function RequireAuth({ children }: RequireAuthProps) {
   const router = useRouter();
-  const user = useAppSelector((state) => state.auth.user) as ExtendedAuthUser;
+  const { isAuthenticated, token, user } = useAppSelector(
+    (state) => state.auth
+  );
+
+  const isValidSession = !!token && !!user && isAuthenticated;
 
   useEffect(() => {
-    // Validación estricta del perfil
-    const isProfileIncomplete =
-      !user?.firstName || !user?.lastName || !user?.phone || !user?.countryCode;
-
-    if (isProfileIncomplete) {
-      console.warn("🔒 Perfil incompleto. Redirigiendo a /onboarding/profile");
-      router.push("/onboarding/profile");
+    if (!isValidSession) {
+      console.warn("🔐 Sesión no válida, redirigiendo a login");
+      router.replace("/api/auth/login");
     }
-  }, [router, user]);
+  }, [isValidSession, router]);
+
+  if (!isValidSession) return null;
 
   return <>{children}</>;
 }

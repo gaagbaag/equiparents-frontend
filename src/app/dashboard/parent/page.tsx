@@ -9,6 +9,7 @@ import InvitationForm from "@/components/invitations/InvitationForm";
 import DashboardQuickActions from "@/components/dashboard/DashboardQuickActions";
 import HistoryList from "@/components/HistoryList";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
+import RequireAuth from "@/components/auth/RequireAuth";
 
 export default function ParentDashboardPage() {
   const router = useRouter();
@@ -80,32 +81,36 @@ export default function ParentDashboardPage() {
   }
 
   return (
-    <DashboardLayout>
-      <main className="container">
-        <h1 className="text-xl font-semibold mb-4">🏠 Mi Dashboard Familiar</h1>
+    <RequireAuth>
+      <DashboardLayout>
+        <main className="container">
+          <h1 className="text-xl font-semibold mb-4">
+            🏠 Mi Dashboard Familiar
+          </h1>
 
-        <DashboardOverview />
+          <DashboardOverview />
 
-        {showForm && (
-          <div className="mb-8">
-            <InvitationForm
-              inviteCode={inviteCode}
-              setInviteCode={setInviteCode}
-              onSubmit={handleInviteSubmit}
-              loading={loading}
-              error={error}
-              success={success}
-            />
-          </div>
-        )}
+          {showForm && (
+            <div className="mb-8">
+              <InvitationForm
+                inviteCode={inviteCode}
+                setInviteCode={setInviteCode}
+                onSubmit={handleInviteSubmit}
+                loading={loading}
+                error={error}
+                success={success}
+              />
+            </div>
+          )}
 
-        <DashboardQuickActions />
+          <DashboardQuickActions />
 
-        <section className="mt-8">
-          <h2 className="text-lg font-medium mb-2">📚 Historial reciente</h2>
-          <HistoryList recentOnly={true} />
-        </section>
-      </main>
-    </DashboardLayout>
+          <section className="mt-8">
+            <h2 className="text-lg font-medium mb-2">📚 Historial reciente</h2>
+            <HistoryList recentOnly={true} />
+          </section>
+        </main>
+      </DashboardLayout>
+    </RequireAuth>
   );
 }
