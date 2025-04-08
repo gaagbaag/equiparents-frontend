@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { fetchCalendarData } from "@/redux/thunks/calendar/fetchCalendarData";
+import { fetchCalendarData } from "@/redux/thunks/calendar/calendarThunks";
 import useFilteredEvents from "@/hooks/useFilteredEvents";
 import CalendarEventForm from "@/components/calendar/CalendarEventForm";
 import { format } from "date-fns";
@@ -44,11 +44,13 @@ export default function CalendarPage() {
           className="input"
         >
           <option value="">Todas las categorías</option>
-          {categories.map((c: CalendarCategory) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
+          {/* Evitamos crashear si "categories" no es un array */}
+          {Array.isArray(categories) &&
+            categories.map((c: CalendarCategory) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
         </select>
 
         <select
@@ -57,11 +59,12 @@ export default function CalendarPage() {
           className="input"
         >
           <option value="">Todos los hijos</option>
-          {children.map((c: Child) => (
-            <option key={c.id} value={c.id}>
-              {c.firstName}
-            </option>
-          ))}
+          {Array.isArray(children) &&
+            children.map((ch: Child) => (
+              <option key={ch.id} value={ch.id}>
+                {ch.firstName}
+              </option>
+            ))}
         </select>
 
         <input
@@ -72,7 +75,7 @@ export default function CalendarPage() {
         />
       </div>
 
-      {/* Tabla */}
+      {/* Tabla de eventos */}
       {loading ? (
         <p>Cargando eventos...</p>
       ) : error ? (
@@ -112,7 +115,7 @@ export default function CalendarPage() {
         </table>
       )}
 
-      {/* Botón agregar evento */}
+      {/* Botón para formulario */}
       <div className="mt-6 text-center">
         {!showForm && (
           <button
@@ -124,13 +127,13 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* Formulario */}
+      {/* Formulario de nuevo evento */}
       {showForm && (
         <div className="mt-8">
           <CalendarEventForm
-            categories={categories}
-            children={children}
-            tags={tags}
+            categories={Array.isArray(categories) ? categories : []}
+            children={Array.isArray(children) ? children : []}
+            tags={Array.isArray(tags) ? tags : []}
             onEventCreated={() => {
               dispatch(fetchCalendarData());
               setShowForm(false);

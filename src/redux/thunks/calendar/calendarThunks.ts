@@ -9,6 +9,10 @@ import {
   setError,
 } from "../../slices/calendarSlice";
 
+/**
+ * Un único thunk para cargar eventos, categorías, hijos y etiquetas (tags)
+ * del calendario de manera coherente y sin duplicaciones.
+ */
 export const fetchCalendarData = createAsyncThunk(
   "calendar/fetchAll",
   async (_, { dispatch }) => {
@@ -23,31 +27,44 @@ export const fetchCalendarData = createAsyncThunk(
         `${process.env.NEXT_PUBLIC_API_URL}/api/calendar/events`
       );
       const eventsData = await resEvents.json();
-      console.log("📆 Eventos", eventsData);
-      dispatch(setEvents(eventsData.events || []));
 
       // 2. Cargar categorías
       const resCategories = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/categories?type=event`
       );
       const categoriesData = await resCategories.json();
-      console.log("📁 Categorías", categoriesData);
-      dispatch(setCategories(categoriesData.categories || []));
 
-      // 3. Cargar hijos (desde cuenta parental)
+      // 3. Cargar hijos (usando la cuenta parental)
       const resAccount = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/parental-accounts/my-account`
       );
       const accountData = await resAccount.json();
-      console.log("👧 Hijos", accountData);
-      dispatch(setChildren(accountData.children || []));
 
-      // 4. Cargar etiquetas (tags)
+      // 4. Cargar etiquetas
       const resTags = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/tags?type=event`
       );
       const tagsData = await resTags.json();
-      console.log("🏷️ Tags", tagsData);
+
+      // Asignamos al store
+      // - Asumiendo que eventsData => { events: [...] }
+      dispatch(setEvents(eventsData.events || []));
+
+      // - Asumiendo que categoriesData => { categories: [...] }
+      //   (o si tu backend retorna "data" o un array suelto, ajusta las or's).
+      dispatch(
+        setCategories(
+          categoriesData.categories ||
+            categoriesData.data ||
+            categoriesData ||
+            []
+        )
+      );
+
+      // - Para hijos, la respuesta de my-account => { children: [...] }
+      dispatch(setChildren(accountData.children || []));
+
+      // - Para tags => { tags: [...] }
       dispatch(setTags(tagsData.tags || []));
 
       console.log("✅ Datos del calendario cargados correctamente.");
