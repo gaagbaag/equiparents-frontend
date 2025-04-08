@@ -5,12 +5,13 @@ import {
   setCategories,
   setChildren,
   setTags,
+  setParents,
   setLoading,
   setError,
 } from "../../slices/calendarSlice";
 
 /**
- * Un único thunk para cargar eventos, categorías, hijos y etiquetas (tags)
+ * Un único thunk para cargar eventos, categorías, hijos, etiquetas (tags) y padres
  * del calendario de manera coherente y sin duplicaciones.
  */
 export const fetchCalendarData = createAsyncThunk(
@@ -34,7 +35,7 @@ export const fetchCalendarData = createAsyncThunk(
       );
       const categoriesData = await resCategories.json();
 
-      // 3. Cargar hijos (usando la cuenta parental)
+      // 3. Cargar la cuenta parental, que retorna hijos y además los usuarios asociados
       const resAccount = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/parental-accounts/my-account`
       );
@@ -46,12 +47,8 @@ export const fetchCalendarData = createAsyncThunk(
       );
       const tagsData = await resTags.json();
 
-      // Asignamos al store
-      // - Asumiendo que eventsData => { events: [...] }
+      // Despachar la data al store:
       dispatch(setEvents(eventsData.events || []));
-
-      // - Asumiendo que categoriesData => { categories: [...] }
-      //   (o si tu backend retorna "data" o un array suelto, ajusta las or's).
       dispatch(
         setCategories(
           categoriesData.categories ||
@@ -60,11 +57,9 @@ export const fetchCalendarData = createAsyncThunk(
             []
         )
       );
-
-      // - Para hijos, la respuesta de my-account => { children: [...] }
+      // Nota: El endpoint retorna la cuenta parental con la propiedad "users"
       dispatch(setChildren(accountData.children || []));
-
-      // - Para tags => { tags: [...] }
+      dispatch(setParents(accountData.users || []));
       dispatch(setTags(tagsData.tags || []));
 
       console.log("✅ Datos del calendario cargados correctamente.");

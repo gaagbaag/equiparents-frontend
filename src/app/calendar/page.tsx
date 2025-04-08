@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { fetchCalendarData } from "@/redux/thunks/calendar/calendarThunks";
@@ -20,9 +19,12 @@ export default function CalendarPage() {
   const [filterDate, setFilterDate] = useState("");
   const [showForm, setShowForm] = useState(false);
 
-  const categories = useAppSelector((state) => state.calendar.categories);
-  const children = useAppSelector((state) => state.calendar.children);
-  const tags = useAppSelector((state) => state.calendar.tags);
+  const categories = useAppSelector((state) => state.calendar.categories) || [];
+  const children = useAppSelector((state) => state.calendar.children) || [];
+  const tags = useAppSelector((state) => state.calendar.tags) || [];
+  // Supongamos que en tu slice de calendar agregaste una propiedad "parents".
+  // Si no la tienes, envía un array vacío.
+  const parents = useAppSelector((state) => state.calendar.parents) || [];
   const loading = useAppSelector((state) => state.calendar.loading);
   const error = useAppSelector((state) => state.calendar.error);
 
@@ -44,7 +46,6 @@ export default function CalendarPage() {
           className="input"
         >
           <option value="">Todas las categorías</option>
-          {/* Evitamos crashear si "categories" no es un array */}
           {Array.isArray(categories) &&
             categories.map((c: CalendarCategory) => (
               <option key={c.id} value={c.id}>
@@ -60,9 +61,9 @@ export default function CalendarPage() {
         >
           <option value="">Todos los hijos</option>
           {Array.isArray(children) &&
-            children.map((ch: Child) => (
-              <option key={ch.id} value={ch.id}>
-                {ch.firstName}
+            children.map((c: Child) => (
+              <option key={c.id} value={c.id}>
+                {c.firstName}
               </option>
             ))}
         </select>
@@ -115,7 +116,7 @@ export default function CalendarPage() {
         </table>
       )}
 
-      {/* Botón para formulario */}
+      {/* Botón para mostrar formulario */}
       <div className="mt-6 text-center">
         {!showForm && (
           <button
@@ -131,9 +132,10 @@ export default function CalendarPage() {
       {showForm && (
         <div className="mt-8">
           <CalendarEventForm
-            categories={Array.isArray(categories) ? categories : []}
-            children={Array.isArray(children) ? children : []}
-            tags={Array.isArray(tags) ? tags : []}
+            categories={categories}
+            children={children}
+            tags={tags}
+            parents={parents}
             onEventCreated={() => {
               dispatch(fetchCalendarData());
               setShowForm(false);

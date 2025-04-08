@@ -1,9 +1,13 @@
-// src/redux/slices/calendarSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 
 // Tipos de entidad
 export interface Child {
+  id: string;
+  firstName: string;
+}
+
+export interface Parent {
   id: string;
   firstName: string;
 }
@@ -35,6 +39,7 @@ interface CalendarState {
   categories: Category[];
   children: Child[];
   tags: Tag[];
+  parents: Parent[]; // Se agregó esta propiedad
   loading: boolean;
   error: string | null;
 }
@@ -44,6 +49,7 @@ const initialState: CalendarState = {
   categories: [],
   children: [],
   tags: [],
+  parents: [],
   loading: false,
   error: null,
 };
@@ -65,6 +71,9 @@ const calendarSlice = createSlice({
     setTags: (state, action: PayloadAction<Tag[]>) => {
       state.tags = action.payload;
     },
+    setParents: (state, action: PayloadAction<Parent[]>) => {
+      state.parents = action.payload;
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
@@ -85,11 +94,15 @@ export const selectCalendarTags = (state: RootState) => state.calendar.tags;
 
 export const selectCalendarEvents = (state: RootState) => state.calendar.events;
 
+export const selectCalendarParents = (state: RootState) =>
+  state.calendar.parents;
+
 export const {
   setEvents,
   setCategories,
   setChildren,
   setTags,
+  setParents,
   setLoading,
   setError,
 } = calendarSlice.actions;
