@@ -1,11 +1,17 @@
-export interface AuthUser {
-  sub: string;
-  email: string;
-  name: string;
-  picture?: string;
+export interface Address {
+  id: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
 }
 
-export interface ExtendedAuthUser {
+export type ValidRole = "parent" | "admin";
+
+export interface AuthUser {
   sub: string;
   name: string;
   email: string;
@@ -14,7 +20,14 @@ export interface ExtendedAuthUser {
   lastName?: string;
   phone?: string;
   countryCode?: string;
-  address?: any; // ← agrega esto si usas dirección
+  countryDialCode?: string;
   parentalAccountId?: string;
-  role?: "parent" | "admin";
+  address?: Address | null;
+  role?: ValidRole | null;
+}
+
+export interface ExtendedAuthUser extends AuthUser {
+  id: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

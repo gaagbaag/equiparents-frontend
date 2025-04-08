@@ -7,6 +7,7 @@ interface ParentalAccountState {
   children: any[];
   users: any[];
   finalized: boolean;
+  calendar: { id: string } | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
@@ -15,6 +16,7 @@ const initialState: ParentalAccountState = {
   children: [],
   users: [],
   finalized: false,
+  calendar: null,
   status: "idle",
   error: null,
 };
@@ -47,6 +49,7 @@ export const fetchParentalAccount = createAsyncThunk<
       children: data.children || [],
       users: data.users || [],
       finalized: data.finalized || false,
+      calendar: data.calendar || null,
       status: "succeeded",
       error: null,
     };
@@ -56,6 +59,7 @@ export const fetchParentalAccount = createAsyncThunk<
       children: [],
       users: [],
       finalized: false,
+      calendar: null,
       status: "failed",
       error: err.message || "Error inesperado",
     });
@@ -74,13 +78,17 @@ const parentalAccountSlice = createSlice({
         state.status = "loading";
         state.error = null;
       })
-      .addCase(fetchParentalAccount.fulfilled, (state, action) => {
-        state.children = action.payload.children;
-        state.users = action.payload.users;
-        state.finalized = action.payload.finalized;
-        state.status = "succeeded";
-        state.error = null;
-      })
+      .addCase(
+        fetchParentalAccount.fulfilled,
+        (state, action: PayloadAction<ParentalAccountState>) => {
+          state.children = action.payload.children;
+          state.users = action.payload.users;
+          state.finalized = action.payload.finalized;
+          state.calendar = action.payload.calendar;
+          state.status = "succeeded";
+          state.error = null;
+        }
+      )
       .addCase(fetchParentalAccount.rejected, (state, action) => {
         state.status = "failed";
         state.error =

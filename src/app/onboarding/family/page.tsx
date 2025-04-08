@@ -17,71 +17,65 @@ export default function FamilyPage() {
   const [loading, setLoading] = useState(false);
   const [expiredMessage, setExpiredMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
+  useOnce(() => {
+    checkParentalAccount();
+    fetchExpired();
+  });
 
-    const fetchExpired = async () => {
-      try {
-        const res = await fetchWithToken(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/invitations/expired`
-        );
+  async function fetchExpired() {
+    try {
+      const res = await fetchWithToken(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/invitations/expired`
+      );
 
-        if (res.status === 404) {
-          console.info("ℹ️ No hay invitaciones caducadas activas.");
-          return;
-        }
-
-        const data = await handleFetchErrors(res);
-        if (mounted && data?.email && data?.expiredAt) {
-          const date = new Date(data.expiredAt).toLocaleDateString("es-CL", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          });
-          setExpiredMessage(
-            `La invitación enviada a ${data.email} ha caducado el ${date}.`
-          );
-        }
-      } catch (err: any) {
-        logFetchError(err, "consultar invitación caducada");
+      if (res.status === 404) {
+        console.info("ℹ️ No hay invitaciones caducadas activas.");
+        return;
       }
-    };
 
-    const checkParentalAccount = async () => {
-      try {
-        const tokenRes = await fetch("/api/auth/token");
-        const { accessToken } = await tokenRes.json();
-
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/parental-accounts/my-account`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
+      const data = await handleFetchErrors(res);
+      if (data?.email && data?.expiredAt) {
+        const date = new Date(data.expiredAt).toLocaleDateString("es-CL", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        });
+        setExpiredMessage(
+          `La invitación enviada a ${data.email} ha caducado el ${date}.`
         );
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.id) {
-            router.replace("/dashboard");
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("Error al obtener cuenta parental:", err);
       }
-    };
+    } catch (err: any) {
+      logFetchError(err, "consultar invitación caducada");
+    }
+  }
 
-    useOnce(() => {
-      checkParentalAccount();
-      fetchExpired();
-    });
+  async function checkParentalAccount() {
+    try {
+      const tokenRes = await fetch("/api/auth/token");
+      const { accessToken } = await tokenRes.json();
 
-    return () => {
-      mounted = false;
-    };
-  }, [router]);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/parental-accounts/my-account`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log("📦 Cuenta parental recibida:", data);
+        if (data?.id && data?.calendar) {
+          router.replace("/dashboard/parent");
+        } else {
+          console.warn("⚠️ Cuenta parental sin calendario asociado");
+        }
+      }
+    } catch (err) {
+      console.error("Error al obtener cuenta parental:", err);
+    }
+  }
 
   const handleCreate = async () => {
     setLoading(true);

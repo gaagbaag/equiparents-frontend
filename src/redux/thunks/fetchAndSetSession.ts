@@ -1,12 +1,12 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { fetchSessionData } from "@/utils/fetchSession";
 import { setUser } from "../slices/authSlice";
-import type { AuthUser, ExtendedAuthUser } from "@/types";
+import type { ExtendedAuthUser, ValidRole } from "@/types/auth";
 
 interface SessionData {
   user: ExtendedAuthUser;
   accessToken?: string;
-  roles: string[];
+  roles: ValidRole[];
 }
 
 export const fetchAndSetSession = createAsyncThunk<
@@ -15,15 +15,33 @@ export const fetchAndSetSession = createAsyncThunk<
   { rejectValue: string }
 >("auth/fetchAndSetSession", async (_, { dispatch, rejectWithValue }) => {
   try {
-    // Paso 1: Obtener sesión básica (cookie + accessToken)
-    const session = await fetchSessionData();
-    const token = session.accessToken;
+    console.log("🔄 Iniciando fetchAndSetSession...");
 
-    if (!token || !session.user) {
+    const session = await fetchSessionData();
+    if (!session || !session.accessToken || !session.user) {
+      console.warn("⚠️ Sesión no válida o incompleta:", session);
       return rejectWithValue("Sesión no válida o incompleta");
     }
 
-    // Paso 2: Llamar al backend Express con JWT
+    const token = session.accessToken;
+
+    // Crear usuario si no existe
+    const postLoginRes = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/post-login`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (postLoginRes.status === 201) {
+      const json = await postLoginRes.json();
+      console.log("✅ Usuario creado automáticamente:", json?.user?.id);
+    }
+
+    // Cargar datos desde backend
     const backendRes = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
       {
@@ -34,14 +52,19 @@ export const fetchAndSetSession = createAsyncThunk<
     );
 
     if (!backendRes.ok) {
-      console.warn("⚠️ No se pudo obtener el usuario desde el backend");
       return rejectWithValue("Usuario no encontrado en base de datos");
     }
 
     const backendUser = await backendRes.json();
 
-    // Paso 3: Unificar datos
-    const authUser: AuthUser = {
+    const roles = Array.isArray(session.roles)
+      ? session.roles.filter((r): r is ValidRole =>
+          ["admin", "parent"].includes(r)
+        )
+      : [];
+
+    const user: ExtendedAuthUser = {
+      id: backendUser.id,
       sub: session.user.sub,
       name: session.user.name,
       email: session.user.email,
@@ -52,34 +75,22 @@ export const fetchAndSetSession = createAsyncThunk<
       countryCode: backendUser.countryCode,
       countryDialCode: backendUser.countryDialCode,
       parentalAccountId: backendUser.parentalAccountId,
-      address: backendUser.address,
-      role: session.user.role || backendUser.role || null,
+      address: backendUser.address ?? null,
+      role: backendUser.role,
+      createdAt: backendUser.createdAt,
+      updatedAt: backendUser.updatedAt,
     };
 
-    const safeRoles = (session.roles || []).filter(
-      (r): r is "admin" | "parent" => r === "admin" || r === "parent"
-    );
+    dispatch(setUser({ user, token, roles }));
 
-    // Paso 4: Guardar en Redux
-    dispatch(
-      setUser({
-        user: authUser,
-        token,
-        roles: safeRoles,
-      })
-    );
+    console.log("🟢 Usuario sincronizado correctamente:", {
+      id: user.id,
+      roles,
+    });
 
-    console.log("✅ Usuario final:", authUser);
-    return {
-      user: {
-        ...session.user,
-        ...backendUser,
-      },
-      accessToken: token,
-      roles: safeRoles,
-    };
-  } catch (error) {
-    console.error("❌ Error en fetchAndSetSession:", error);
+    return { user, accessToken: token, roles };
+  } catch (error: any) {
+    console.error("❌ Error en fetchAndSetSession:", error?.message || error);
     return rejectWithValue("Fallo al obtener la sesión");
   }
 });

@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import authReducer from "./slices/authSlice"; // ❗️ No debe ser con llaves
+import authReducer from "./slices/authSlice";
 import parentalAccountReducer from "./slices/parentalAccountSlice";
 import calendarReducer from "./slices/calendarSlice";
 import invitationReducer from "./slices/invitationSlice";
@@ -13,9 +13,14 @@ export const store = configureStore({
     invitation: invitationReducer,
     children: childrenReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false, // ⚠️ necesario si usas objetos como errores
+    }),
+  devTools: process.env.NODE_ENV !== "production",
 });
 
-// Tipos globales para Redux
+// Tipos globales
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 

@@ -1,16 +1,16 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { AuthUser } from "@/types";
+import type { ExtendedAuthUser, ValidRole } from "@/types/auth";
 
 interface AuthState {
-  user: AuthUser | null;
-  token: string | null;
-  roles: ("parent" | "admin")[];
+  user: ExtendedAuthUser | null;
+  token: string;
+  roles: ValidRole[];
   isAuthenticated: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
-  token: null,
+  token: "",
   roles: [],
   isAuthenticated: false,
 };
@@ -19,23 +19,22 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setUser: (
+    setUser(
       state,
       action: PayloadAction<{
-        user: AuthUser;
+        user: ExtendedAuthUser;
         token: string;
-        roles: ("parent" | "admin")[];
+        roles: ValidRole[];
       }>
-    ) => {
-      const { user, token, roles } = action.payload;
-      state.user = user;
-      state.token = token;
-      state.roles = roles;
+    ) {
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.roles = action.payload.roles;
       state.isAuthenticated = true;
     },
-    logout: (state) => {
+    logout(state) {
       state.user = null;
-      state.token = null;
+      state.token = "";
       state.roles = [];
       state.isAuthenticated = false;
     },

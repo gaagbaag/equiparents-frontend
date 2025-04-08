@@ -1,4 +1,3 @@
-// CalendarEventForm.tsx
 "use client";
 
 import { useState } from "react";
@@ -6,12 +5,14 @@ import { useState } from "react";
 interface CalendarEventFormProps {
   children: { id: string; firstName: string }[];
   categories: { id: string; name: string }[];
+  tags: { id: string; name: string }[];
   onEventCreated?: () => void;
 }
 
 export default function CalendarEventForm({
   children,
   categories,
+  tags,
   onEventCreated,
 }: CalendarEventFormProps) {
   const [title, setTitle] = useState("");
@@ -23,6 +24,7 @@ export default function CalendarEventForm({
   const [location, setLocation] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [childIds, setChildIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -43,22 +45,26 @@ export default function CalendarEventForm({
       const tokenRes = await fetch("/api/auth/token");
       const { accessToken } = await tokenRes.json();
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          start,
-          end,
-          location,
-          categoryId,
-          childIds,
-        }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/calendar/events`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            description,
+            start,
+            end,
+            location,
+            categoryId,
+            childIds,
+            tagIds, // ✅ envío de etiquetas
+          }),
+        }
+      );
 
       if (res.ok) {
         setSuccess(true);
@@ -71,6 +77,7 @@ export default function CalendarEventForm({
         setLocation("");
         setCategoryId("");
         setChildIds([]);
+        setTagIds([]);
         onEventCreated?.();
       } else {
         const errData = await res.json();
@@ -170,6 +177,22 @@ export default function CalendarEventForm({
         {children.map((child) => (
           <option key={child.id} value={child.id}>
             {child.firstName}
+          </option>
+        ))}
+      </select>
+
+      <label className="block mb-1">🏷️ Etiquetas:</label>
+      <select
+        multiple
+        value={tagIds}
+        onChange={(e) =>
+          setTagIds(Array.from(e.target.selectedOptions, (opt) => opt.value))
+        }
+        className="input mb-4"
+      >
+        {tags.map((tag) => (
+          <option key={tag.id} value={tag.id}>
+            {tag.name}
           </option>
         ))}
       </select>

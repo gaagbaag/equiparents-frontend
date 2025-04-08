@@ -1,22 +1,31 @@
-// calendar/page.tsx
 "use client";
 
-import { useState } from "react";
-import { useSelector } from "react-redux";
-import useCalendarData from "@/hooks/useCalendarData";
+import { useState, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { fetchCalendarData } from "@/redux/thunks/calendar/fetchCalendarData";
 import useFilteredEvents from "@/hooks/useFilteredEvents";
 import CalendarEventForm from "@/components/calendar/CalendarEventForm";
 import { format } from "date-fns";
+import type { CalendarCategory, Child, CalendarEvent } from "@/types/calendar";
 
 export default function CalendarPage() {
-  useCalendarData();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(fetchCalendarData());
+  }, [dispatch]);
 
   const [filterCategory, setFilterCategory] = useState("");
   const [filterChild, setFilterChild] = useState("");
   const [filterDate, setFilterDate] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
-  const categories = useSelector((state: any) => state.calendar.categories);
-  const children = useSelector((state: any) => state.calendar.children);
+  const categories = useAppSelector((state) => state.calendar.categories);
+  const children = useAppSelector((state) => state.calendar.children);
+  const tags = useAppSelector((state) => state.calendar.tags);
+  const loading = useAppSelector((state) => state.calendar.loading);
+  const error = useAppSelector((state) => state.calendar.error);
+
   const filteredEvents = useFilteredEvents({
     filterCategory,
     filterChild,
@@ -28,14 +37,14 @@ export default function CalendarPage() {
       <h1 className="heading-xl mb-4">🗓️ Calendario familiar</h1>
 
       {/* Filtros */}
-      <div className="filters mb-4 flex gap-2">
+      <div className="filters mb-4 flex flex-wrap gap-2">
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
           className="input"
         >
           <option value="">Todas las categorías</option>
-          {categories.map((c: any) => (
+          {categories.map((c: CalendarCategory) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -48,7 +57,7 @@ export default function CalendarPage() {
           className="input"
         >
           <option value="">Todos los hijos</option>
-          {children.map((c: any) => (
+          {children.map((c: Child) => (
             <option key={c.id} value={c.id}>
               {c.firstName}
             </option>
@@ -63,46 +72,72 @@ export default function CalendarPage() {
         />
       </div>
 
-      {/* Tabla de eventos */}
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-gray-200">
-            <th>Título</th>
-            <th>Hijos</th>
-            <th>Categoría</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredEvents.map((event: any) => (
-            <tr key={event.id} className="border-b">
-              <td>{event.title}</td>
-              <td>
-                {event.children && event.children.length > 0
-                  ? event.children
-                      .map((c: any) => c.child?.firstName)
-                      .join(", ")
-                  : "—"}
-              </td>
-              <td>{event.category?.name || "—"}</td>
-              <td>{format(new Date(event.start), "dd/MM/yyyy HH:mm")}</td>
-              <td>{format(new Date(event.end), "dd/MM/yyyy HH:mm")}</td>
+      {/* Tabla */}
+      {loading ? (
+        <p>Cargando eventos...</p>
+      ) : error ? (
+        <p className="text-red-600">{error}</p>
+      ) : filteredEvents.length === 0 ? (
+        <p>No hay eventos que coincidan con los filtros seleccionados.</p>
+      ) : (
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-200 text-left">
+              <th className="p-2">Título</th>
+              <th className="p-2">Hijos</th>
+              <th className="p-2">Categoría</th>
+              <th className="p-2">Inicio</th>
+              <th className="p-2">Fin</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredEvents.map((event: CalendarEvent) => (
+              <tr key={event.id} className="border-b">
+                <td className="p-2">{event.title}</td>
+                <td className="p-2">
+                  {event.children?.length
+                    ? event.children.map((c) => c.child?.firstName).join(", ")
+                    : "—"}
+                </td>
+                <td className="p-2">{event.category?.name || "—"}</td>
+                <td className="p-2">
+                  {format(new Date(event.start), "dd/MM/yyyy HH:mm")}
+                </td>
+                <td className="p-2">
+                  {format(new Date(event.end), "dd/MM/yyyy HH:mm")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Botón agregar evento */}
+      <div className="mt-6 text-center">
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="button button-primary"
+          >
+            ➕ Agregar nuevo evento
+          </button>
+        )}
+      </div>
 
       {/* Formulario */}
-      <div className="mt-8">
-        <CalendarEventForm
-          categories={categories}
-          children={children}
-          onEventCreated={() => {
-            useCalendarData(); // recarga los datos tras crear evento
-          }}
-        />
-      </div>
+      {showForm && (
+        <div className="mt-8">
+          <CalendarEventForm
+            categories={categories}
+            children={children}
+            tags={tags}
+            onEventCreated={() => {
+              dispatch(fetchCalendarData());
+              setShowForm(false);
+            }}
+          />
+        </div>
+      )}
     </main>
   );
 }

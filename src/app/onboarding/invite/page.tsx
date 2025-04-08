@@ -16,25 +16,39 @@ export default function InvitePage() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
+  // 1) Obtenemos el token del state, igual que en “family” o “profile”
   const { accepted, error, loading } = useSelector(
     (state: RootState) => state.invitation
   );
+  const { token } = useSelector((state: RootState) => state.auth);
+  // Por ejemplo, tu slice `auth` podría haber algo como:
+  // initialState = { token: null, user: null, ... }
 
   const [inviteCode, setInviteCode] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Evitas fallo si no hay token
+    if (!token) {
+      dispatch(acceptFailure("No hay token: inicia sesión antes de aceptar."));
+      return;
+    }
+
     dispatch(startAccept());
-    setInviteCode(""); // Reset inviteCode after submission
+    setInviteCode("");
 
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/invitations/accept`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            // 2) Añadimos la cabecera Authorization con Bearer
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include", // Si tu proyecto necesita cookies en la misma llamada
           body: JSON.stringify({ invitationCode: inviteCode }),
         }
       );
@@ -48,7 +62,6 @@ export default function InvitePage() {
       dispatch(acceptSuccess(inviteCode));
       dispatch(fetchParentalAccount());
 
-      // Redirect with a slight delay to show success state
       setTimeout(() => {
         router.push("/dashboard");
       }, 1500);

@@ -1,12 +1,10 @@
-// src/redux/thunks/authThunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { setUser } from "../slices/authSlice";
 import type { RootState } from "../store";
-import type { AuthUser } from "@/types";
+import type { ExtendedAuthUser, ValidRole } from "@/types/auth";
 
-// 🔁 Thunk para actualizar perfil del usuario
 export const updateUserProfile = createAsyncThunk<
-  AuthUser,
+  ExtendedAuthUser,
   {
     firstName: string;
     lastName: string;
@@ -52,7 +50,7 @@ export const updateUserProfile = createAsyncThunk<
         throw new Error(error.message || "Error al actualizar perfil");
       }
 
-      const data: AuthUser = await res.json();
+      const data: ExtendedAuthUser = await res.json();
       dispatch(setUser({ user: data, token, roles }));
 
       console.log("✅ Perfil actualizado:", data);
