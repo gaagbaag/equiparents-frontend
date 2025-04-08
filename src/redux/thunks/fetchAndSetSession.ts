@@ -1,3 +1,4 @@
+// fetchAndSetSession.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { fetchSessionData } from "@/utils/fetchSession";
 import { setUser } from "../slices/authSlice";
@@ -17,15 +18,16 @@ export const fetchAndSetSession = createAsyncThunk<
   try {
     console.log("🔄 Iniciando fetchAndSetSession...");
 
+    // 1. Obtenemos la sesión local (por ejemplo, de Auth0)
     const session = await fetchSessionData();
-    if (!session || !session.accessToken || !session.user) {
+    if (!session?.accessToken || !session?.user) {
       console.warn("⚠️ Sesión no válida o incompleta:", session);
       return rejectWithValue("Sesión no válida o incompleta");
     }
 
     const token = session.accessToken;
 
-    // Crear usuario si no existe
+    // 2. Notificamos al backend para crear/actualizar el usuario
     const postLoginRes = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/auth/post-login`,
       {
@@ -35,14 +37,13 @@ export const fetchAndSetSession = createAsyncThunk<
         },
       }
     );
-
     if (postLoginRes.status === 201) {
       const json = await postLoginRes.json();
       console.log("✅ Usuario creado automáticamente:", json?.user?.id);
     }
 
-    // Cargar datos desde backend
-    const backendRes = await fetch(
+    // 3. Obtenemos datos concretos desde /api/users/me en tu backend
+    const meRes = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
       {
         headers: {
@@ -50,22 +51,24 @@ export const fetchAndSetSession = createAsyncThunk<
         },
       }
     );
-
-    if (!backendRes.ok) {
+    if (!meRes.ok) {
       return rejectWithValue("Usuario no encontrado en base de datos");
     }
+    const backendUser = await meRes.json();
 
-    const backendUser = await backendRes.json();
+    // 4. Transformamos la propiedad "role" en un array.
+    //    Ej. si backendUser.role === "admin", => roles = ["admin"]
+    const roles: ValidRole[] = [];
+    if (backendUser.role === "admin") {
+      roles.push("admin");
+    } else if (backendUser.role === "parent") {
+      roles.push("parent");
+    }
 
-    const roles = Array.isArray(session.roles)
-      ? session.roles.filter((r): r is ValidRole =>
-          ["admin", "parent"].includes(r)
-        )
-      : [];
-
+    // 5. Construimos el user final
     const user: ExtendedAuthUser = {
       id: backendUser.id,
-      sub: session.user.sub,
+      sub: session.user.sub, // del ID token / claims
       name: session.user.name,
       email: session.user.email,
       picture: session.user.picture,
@@ -76,11 +79,12 @@ export const fetchAndSetSession = createAsyncThunk<
       countryDialCode: backendUser.countryDialCode,
       parentalAccountId: backendUser.parentalAccountId,
       address: backendUser.address ?? null,
-      role: backendUser.role,
+      role: backendUser.role, // "admin" o "parent"
       createdAt: backendUser.createdAt,
       updatedAt: backendUser.updatedAt,
     };
 
+    // 6. Guardamos todo en el store (user + token + roles=["admin"] o ["parent"])
     dispatch(setUser({ user, token, roles }));
 
     console.log("🟢 Usuario sincronizado correctamente:", {

@@ -75,7 +75,7 @@ export default function Header() {
           </>
         )}
 
-        <Link href="/api/auth/logout" className="hover:underline">
+        <Link href="/api/auth/logout?federated" className="hover:underline">
           Cerrar
         </Link>
       </nav>

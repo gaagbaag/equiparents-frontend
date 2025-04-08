@@ -134,13 +134,6 @@ export default function FamilyPage() {
         error={error}
         router={router}
       />
-
-      <button
-        className="button button-secondary mt-4"
-        onClick={handleJoinWithCode}
-      >
-        Unirme con código de invitación
-      </button>
     </main>
   );
 }
