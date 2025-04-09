@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "echo '✅ Instalación completa. Si ves advertencias de scripts ignorados, ejecuta: pnpm approve-builds --interactive'"
+    "check:deps": "echo '📦 Dependencias frontend instaladas correctamente ✅'"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",

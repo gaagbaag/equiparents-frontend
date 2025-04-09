@@ -1,9 +1,11 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { fetchCalendarData } from "@/redux/thunks/calendar/calendarThunks";
 import useFilteredEvents from "@/hooks/useFilteredEvents";
 import CalendarEventForm from "@/components/calendar/CalendarEventForm";
+import GoogleCalendarSync from "@/components/calendar/GoogleCalendarSync";
 import { format } from "date-fns";
 import type { CalendarCategory, Child, CalendarEvent } from "@/types/calendar";
 
@@ -22,8 +24,6 @@ export default function CalendarPage() {
   const categories = useAppSelector((state) => state.calendar.categories) || [];
   const children = useAppSelector((state) => state.calendar.children) || [];
   const tags = useAppSelector((state) => state.calendar.tags) || [];
-  // Supongamos que en tu slice de calendar agregaste una propiedad "parents".
-  // Si no la tienes, envía un array vacío.
   const parents = useAppSelector((state) => state.calendar.parents) || [];
   const loading = useAppSelector((state) => state.calendar.loading);
   const error = useAppSelector((state) => state.calendar.error);
@@ -37,6 +37,8 @@ export default function CalendarPage() {
   return (
     <main className="container">
       <h1 className="heading-xl mb-4">🗓️ Calendario familiar</h1>
+
+      <GoogleCalendarSync />
 
       {/* Filtros */}
       <div className="filters mb-4 flex flex-wrap gap-2">
