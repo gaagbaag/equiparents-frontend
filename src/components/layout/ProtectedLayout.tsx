@@ -1,3 +1,4 @@
+// src/components/layout/ProtectedLayout.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,74 +6,116 @@ import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/redux/hooks";
 import { useCheckSession } from "@/hooks/useCheckSession";
 
-type ProtectedLayoutProps = {
+interface ProtectedLayoutProps {
   children: React.ReactNode;
   allowedRoles?: ("admin" | "parent")[];
-};
+}
 
 export default function ProtectedLayout({
   children,
   allowedRoles,
 }: ProtectedLayoutProps) {
   const router = useRouter();
-  const { loading } = useCheckSession(); // Carga la sesión del backend
+  const { loading } = useCheckSession();
   const { isAuthenticated, token, user, roles } = useAppSelector(
     (state) => state.auth
   );
 
   const [sessionVerified, setSessionVerified] = useState(false);
+  const [isWaitingForRedux, setIsWaitingForRedux] = useState(true);
 
   const isValidSession = !!token && !!user && isAuthenticated;
-
-  // Verificamos si el usuario tiene alguno de los roles permitidos
   const hasValidRole =
-    !allowedRoles || allowedRoles.some((role) => roles.includes(role));
+    !!roles?.length &&
+    (!allowedRoles || allowedRoles.some((role) => roles.includes(role)));
 
-  // Esperamos a que useCheckSession() termine (loading === false)
-  // para marcar que la sesión ha sido verificada
+  const userReady =
+    user &&
+    typeof user.role === "string" &&
+    (user.role !== "parent" || user.parentalAccountId !== null);
+
   useEffect(() => {
     if (!loading) {
       setSessionVerified(true);
     }
   }, [loading]);
 
-  // Una vez verificada la sesión, revisamos el rol y la cuenta parental
   useEffect(() => {
-    // Evitamos redirigir mientras no esté verificada la sesión
     if (!sessionVerified) return;
 
-    // 1) Si no hay sesión válida o rol no válido => login
+    const timeout = setTimeout(() => {
+      setIsWaitingForRedux(false);
+    }, 1500); // ⏳ Más margen para Redux
+
+    return () => clearTimeout(timeout);
+  }, [sessionVerified]);
+
+  useEffect(() => {
+    if (!sessionVerified || isWaitingForRedux || !userReady) return;
+
+    console.log("🔎 [ProtectedLayout] Estado de sesión:", {
+      isAuthenticated,
+      token,
+      roles,
+      user,
+      hasValidRole,
+    });
+
     if (!isValidSession || !hasValidRole) {
-      console.warn("🔐 Acceso denegado. Redirigiendo a login...");
-      router.replace("/api/auth/login");
+      console.warn("🔐 Sesión no válida o sin rol permitido.");
       return;
     }
 
-    // 2) Si es un padre sin parentalAccountId => onboarding
-    //    Pero si user es admin, ignoramos esta regla.
-    if (user && user.role === "parent" && !user.parentalAccountId) {
-      console.warn("⚠️ Padre sin cuenta parental => /onboarding/profile");
-      router.replace("/onboarding/profile");
-      return;
+    if (user?.role === "parent" && !user.parentalAccountId) {
+      console.warn(
+        "⚠️ Padre sin cuenta parental. Redirigiendo a /onboarding/family..."
+      );
+      router.replace("/onboarding/family");
     }
-  }, [sessionVerified, isValidSession, hasValidRole, user, router]);
+  }, [
+    sessionVerified,
+    isWaitingForRedux,
+    isValidSession,
+    hasValidRole,
+    userReady,
+    user,
+    router,
+  ]);
 
-  // Mientras loading o la sesión aún no está verificada, mostramos "Cargando..."
-  if (loading || !sessionVerified) {
-    return <p className="p-4">Cargando sesión...</p>;
+  if (loading || !sessionVerified || isWaitingForRedux || !userReady) {
+    return <p className="p-4 text-gray-600">⏳ Cargando sesión...</p>;
   }
 
-  // Si ya verificamos sesión y no cumple => nada
-  if (!isValidSession || !hasValidRole) {
-    return null;
+  if (!isValidSession) {
+    return (
+      <div className="p-4 text-red-600">
+        ❌ Sesión no válida. No hay token, usuario o estado autenticado.
+        <br />
+        <button
+          onClick={() => location.reload()}
+          className="mt-2 underline text-sm text-blue-600"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
   }
 
-  // Si es padre sin cuenta parental, igual devolvemos null
-  // (aunque ya habría redireccionado en useEffect).
+  if (!hasValidRole) {
+    return (
+      <div className="p-4 text-orange-600">
+        🚫 No tienes permisos suficientes para ver este contenido.
+      </div>
+    );
+  }
+
   if (user?.role === "parent" && !user?.parentalAccountId) {
-    return null;
+    return (
+      <div className="p-4 text-orange-500">
+        ⚠️ Aún no has completado el registro familiar. Serás redirigido...
+      </div>
+    );
   }
 
-  // Caso ideal: usuario con rol válido y (si es parent) cuenta parental
   return <>{children}</>;
 }

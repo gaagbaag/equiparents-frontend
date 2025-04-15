@@ -1,9 +1,16 @@
 import type { ExtendedAuthUser } from "@/types";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
+/**
+ * Redirige al usuario según el estado de su perfil y rol.
+ * @param user Usuario autenticado
+ * @param router Instancia de router de Next.js
+ * @param verbose Habilita logs en consola para debugging
+ */
 export function redirectIfProfileComplete(
   user: ExtendedAuthUser,
-  router: AppRouterInstance
+  router: AppRouterInstance,
+  verbose: boolean = false
 ) {
   const {
     firstName,
@@ -19,14 +26,8 @@ export function redirectIfProfileComplete(
     address &&
     typeof address.country === "string" &&
     address.country.length > 0 &&
-    typeof address.state === "string" &&
-    address.state.length > 0 &&
     typeof address.city === "string" &&
-    address.city.length > 0 &&
-    typeof address.street === "string" &&
-    address.street.length > 0 &&
-    typeof address.number === "string" &&
-    address.number.length > 0;
+    address.city.length > 0;
 
   const profileComplete =
     typeof firstName === "string" &&
@@ -36,31 +37,50 @@ export function redirectIfProfileComplete(
     typeof phone === "string" &&
     phone.length > 0 &&
     typeof countryCode === "string" &&
-    countryCode.length > 0 &&
-    addressComplete;
+    countryCode.length > 0;
+
+  if (verbose) {
+    console.log("🧪 Perfil:", {
+      firstName,
+      lastName,
+      phone,
+      countryCode,
+      addressComplete,
+      role,
+      parentalAccountId,
+    });
+  }
 
   if (!profileComplete) {
-    console.warn("⛔ Perfil incompleto, no se redirige.");
+    if (verbose)
+      console.warn(
+        "⛔ Perfil incompleto, permaneciendo en onboarding/profile."
+      );
     return;
   }
 
-  // Si es un administrador, lo redirigimos al dashboard de admin
   if (role === "admin") {
-    console.log("✅ Redirigiendo a admin dashboard");
+    if (verbose) console.log("🎩 Redirigiendo a /admin/dashboard");
     router.push("/admin/dashboard");
     return;
   }
 
-  // Solo los padres sin cuenta parental son redirigidos a /onboarding/family
-  if (!parentalAccountId) {
-    console.log(
-      "⚠️ No hay cuenta parental aún, redirigiendo a onboarding/family"
-    );
+  if (role === "parent" && !parentalAccountId) {
+    if (verbose) console.log("👨‍👩‍👧 Redirigiendo a /onboarding/family");
     router.push("/onboarding/family");
     return;
   }
 
-  // Si existe cuenta parental, se redirige a dashboard parent
-  console.log("✅ Redirigiendo a dashboard parent");
-  router.push("/dashboard/parent");
+  if (role === "parent" && parentalAccountId) {
+    if (verbose) console.log("✅ Redirigiendo a /dashboard/parent");
+    router.push("/dashboard/parent");
+    return;
+  }
+
+  // Caso por defecto de fallback
+  if (verbose)
+    console.warn(
+      "❓ Rol desconocido o sin condiciones. Redirigiendo a /dashboard"
+    );
+  router.push("/dashboard");
 }

@@ -1,72 +1,54 @@
-// src/redux/thunks/childrenThunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { RootState } from "../store";
+import type { RootState } from "../store";
 import type { Child } from "@/types/child";
 
-export const createChild = createAsyncThunk<
+// ✅ Obtener todos los hijos de la cuenta parental
+export const fetchAllChildren = createAsyncThunk<
+  Child[],
   void,
-  Child,
   { state: RootState; rejectValue: string }
->("children/createChild", async (child, { getState, rejectWithValue }) => {
+>("children/fetchAll", async (_, { getState, rejectWithValue }) => {
   const token = getState().auth.token;
-  if (!token) return rejectWithValue("Token no disponible");
+
+  if (!token) {
+    return rejectWithValue("Token no disponible.");
+  }
 
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/children`, {
-      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify(child),
     });
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.message || "Error al crear hijo/a");
+      throw new Error(data.message || "Error al obtener hijos/as");
     }
+
+    if (!Array.isArray(data.children)) {
+      throw new Error("Respuesta inválida: se esperaba un array de hijos/as");
+    }
+
+    return data.children;
   } catch (err: any) {
-    return rejectWithValue(err.message);
+    console.error("❌ Error en fetchAllChildren:", err);
+    return rejectWithValue(err.message || "Error al obtener hijos/as");
   }
 });
 
-export const updateChild = createAsyncThunk<
-  void,
-  Child,
-  { state: RootState; rejectValue: string }
->("children/updateChild", async (child, { getState, rejectWithValue }) => {
-  const token = getState().auth.token;
-  if (!token) return rejectWithValue("Token no disponible");
-
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/children/${child.id}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(child),
-      }
-    );
-
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.message || "Error al actualizar hijo/a");
-    }
-  } catch (err: any) {
-    return rejectWithValue(err.message);
-  }
-});
-
+// ✅ Obtener hijo/a por ID
 export const fetchChildById = createAsyncThunk<
   Child,
   string,
   { state: RootState; rejectValue: string }
->("children/fetchChildById", async (id, { getState, rejectWithValue }) => {
+>("children/fetchById", async (id, { getState, rejectWithValue }) => {
   const token = getState().auth.token;
-  if (!token) return rejectWithValue("Token no disponible");
+
+  if (!token) {
+    return rejectWithValue("Token no disponible.");
+  }
 
   try {
     const res = await fetch(
@@ -78,61 +60,123 @@ export const fetchChildById = createAsyncThunk<
       }
     );
 
+    const data = await res.json();
+
     if (!res.ok) {
-      const data = await res.json();
       throw new Error(data.message || "Error al obtener hijo/a");
     }
 
-    const data = await res.json();
-    return data as Child;
+    return data.data as Child;
   } catch (err: any) {
-    return rejectWithValue(err.message);
+    console.error("❌ Error en fetchChildById:", err);
+    return rejectWithValue(err.message || "Error al obtener hijo/a");
   }
 });
 
-export const fetchAllChildren = createAsyncThunk<
-  Child[],
-  void,
+// ✅ Crear nuevo hijo/a
+export const createChild = createAsyncThunk<
+  Child,
+  Child,
   { state: RootState; rejectValue: string }
->("children/fetchAllChildren", async (_, { getState, rejectWithValue }) => {
+>("children/create", async (childData, { getState, rejectWithValue }) => {
   const token = getState().auth.token;
-  if (!token) return rejectWithValue("Token no disponible");
+
+  if (!token) {
+    return rejectWithValue("Token no disponible.");
+  }
 
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/children`, {
-      headers: { Authorization: `Bearer ${token}` },
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(childData),
     });
 
-    if (!res.ok) throw new Error("No se pudieron obtener los hijos/as");
-
     const data = await res.json();
-    return data as Child[];
+
+    if (!res.ok) {
+      throw new Error(data.message || "Error al crear hijo/a");
+    }
+
+    return data as Child;
   } catch (err: any) {
-    return rejectWithValue(err.message);
+    console.error("❌ Error en createChild:", err);
+    return rejectWithValue(err.message || "Error al crear hijo/a");
   }
 });
 
-export const deleteChild = createAsyncThunk<
-  string,
-  string,
+// ✅ Actualizar hijo/a existente
+export const updateChild = createAsyncThunk<
+  Child,
+  Child,
   { state: RootState; rejectValue: string }
->("children/deleteChild", async (childId, { getState, rejectWithValue }) => {
+>("children/update", async (childData, { getState, rejectWithValue }) => {
   const token = getState().auth.token;
-  if (!token) return rejectWithValue("Token no disponible");
+
+  if (!token) {
+    return rejectWithValue("Token no disponible.");
+  }
 
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/children/${childId}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/children/${childData.id}`,
       {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(childData),
       }
     );
 
-    if (!res.ok) throw new Error("No se pudo eliminar el hijo/a");
+    const data = await res.json();
 
-    return childId;
+    if (!res.ok) {
+      throw new Error(data.message || "Error al actualizar hijo/a");
+    }
+
+    return data as Child;
   } catch (err: any) {
-    return rejectWithValue(err.message);
+    console.error("❌ Error en updateChild:", err);
+    return rejectWithValue(err.message || "Error al actualizar hijo/a");
+  }
+});
+
+// ✅ Eliminar hijo/a por ID
+export const deleteChild = createAsyncThunk<
+  void,
+  string,
+  { state: RootState; rejectValue: string }
+>("children/delete", async (id, { getState, rejectWithValue }) => {
+  const token = getState().auth.token;
+
+  if (!token) {
+    return rejectWithValue("Token no disponible.");
+  }
+
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/children/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.message || "Error al eliminar hijo/a");
+    }
+
+    return;
+  } catch (err: any) {
+    console.error("❌ Error en deleteChild:", err);
+    return rejectWithValue(err.message || "Error al eliminar hijo/a");
   }
 });

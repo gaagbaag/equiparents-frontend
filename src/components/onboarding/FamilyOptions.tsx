@@ -1,18 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import type { FamilyOptionsProps } from "@/types/onboarding";
 
 export default function FamilyOptions({
   onCreate,
+  onJoin,
   loading,
   error,
-  router,
-}: {
-  onCreate: () => void;
-  loading: boolean;
-  error: string | null;
-  router: ReturnType<typeof useRouter>;
-}) {
+}: FamilyOptionsProps) {
   return (
     <div className="flex flex-col gap-4">
       <button
@@ -26,7 +21,7 @@ export default function FamilyOptions({
 
       <button
         className="button button-secondary"
-        onClick={() => router.push("/onboarding/invite")}
+        onClick={onJoin}
         aria-label="Unirse con código de invitación"
       >
         Unirme con código de invitación

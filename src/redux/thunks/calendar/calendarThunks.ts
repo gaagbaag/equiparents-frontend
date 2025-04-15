@@ -1,5 +1,7 @@
+// src/redux/thunks/calendar/calendarThunks.ts
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import fetchWithToken from "@/utils/fetchWithToken";
+
 import {
   setEvents,
   setCategories,
@@ -8,7 +10,16 @@ import {
   setParents,
   setLoading,
   setError,
-} from "../../slices/calendarSlice";
+} from "@/redux/slices/calendarSlice";
+
+// Tipos globales
+import type {
+  CalendarEvent,
+  CalendarCategory,
+  CalendarTag,
+} from "@/types/calendar";
+import type { Child } from "@/types/child";
+import type { ExtendedAuthUser } from "@/types/auth";
 
 /**
  * Un único thunk para cargar eventos, categorías, hijos, etiquetas (tags) y padres
@@ -27,40 +38,38 @@ export const fetchCalendarData = createAsyncThunk(
       const resEvents = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/calendar/events`
       );
-      const eventsData = await resEvents.json();
+      const eventsJson = await resEvents.json();
+      const events: CalendarEvent[] = eventsJson.events || [];
 
       // 2. Cargar categorías
       const resCategories = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/categories?type=event`
       );
-      const categoriesData = await resCategories.json();
+      const categoriesJson = await resCategories.json();
+      const categories: CalendarCategory[] =
+        categoriesJson.categories || categoriesJson.data || [];
 
-      // 3. Cargar la cuenta parental, que retorna hijos y además los usuarios asociados
+      // 3. Cargar cuenta parental (incluye hijos y usuarios)
       const resAccount = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/parental-accounts/my-account`
       );
       const accountData = await resAccount.json();
+      const children: Child[] = accountData.children || [];
+      const parents: ExtendedAuthUser[] = accountData.users || [];
 
       // 4. Cargar etiquetas
       const resTags = await fetchWithToken(
         `${process.env.NEXT_PUBLIC_API_URL}/api/tags?type=event`
       );
-      const tagsData = await resTags.json();
+      const tagsJson = await resTags.json();
+      const tags: CalendarTag[] = tagsJson.tags || [];
 
-      // Despachar la data al store:
-      dispatch(setEvents(eventsData.events || []));
-      dispatch(
-        setCategories(
-          categoriesData.categories ||
-            categoriesData.data ||
-            categoriesData ||
-            []
-        )
-      );
-      // Nota: El endpoint retorna la cuenta parental con la propiedad "users"
-      dispatch(setChildren(accountData.children || []));
-      dispatch(setParents(accountData.users || []));
-      dispatch(setTags(tagsData.tags || []));
+      // Actualizar el store
+      dispatch(setEvents(events));
+      dispatch(setCategories(categories));
+      dispatch(setChildren(children));
+      dispatch(setParents(parents));
+      dispatch(setTags(tags));
 
       console.log("✅ Datos del calendario cargados correctamente.");
     } catch (err: any) {

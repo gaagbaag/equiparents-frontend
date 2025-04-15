@@ -12,6 +12,9 @@ import InviteParentForm from "../invitations/InviteParentForm";
 import ActiveInvitationCard from "../invitations/ActiveInvitationCard";
 import ExpiredInvitationCard from "../invitations/ExpiredInvitationCard";
 
+// 🆕 Hook de sincronización de Google
+import SyncStatusPanel from "@/components/calendar/GoogleSyncStatus";
+
 type DashboardOverviewProps = {
   onHistoryRefresh?: () => void;
 };

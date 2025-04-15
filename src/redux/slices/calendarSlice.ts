@@ -1,45 +1,21 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 
-// Tipos de entidad
-export interface Child {
-  id: string;
-  firstName: string;
-}
+// Tipos globales reutilizados
+import type { Child } from "@/types/child";
+import type { ExtendedAuthUser } from "@/types/auth";
+import type {
+  CalendarCategory,
+  CalendarTag,
+  CalendarEvent,
+} from "@/types/calendar";
 
-export interface Parent {
-  id: string;
-  firstName: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-}
-
-export interface Tag {
-  id: string;
-  name: string;
-}
-
-export interface Event {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  description?: string;
-  location?: string;
-  category?: Category;
-  children?: Child[];
-}
-
-// Estado inicial tipado
-interface CalendarState {
-  events: Event[];
-  categories: Category[];
+export interface CalendarState {
+  events: CalendarEvent[];
+  categories: CalendarCategory[];
   children: Child[];
-  tags: Tag[];
-  parents: Parent[]; // Se agregó esta propiedad
+  tags: CalendarTag[];
+  parents: ExtendedAuthUser[]; // padres conectados a la cuenta
   loading: boolean;
   error: string | null;
 }
@@ -54,24 +30,23 @@ const initialState: CalendarState = {
   error: null,
 };
 
-// Slice
 const calendarSlice = createSlice({
   name: "calendar",
   initialState,
   reducers: {
-    setEvents: (state, action: PayloadAction<Event[]>) => {
+    setEvents: (state, action: PayloadAction<CalendarEvent[]>) => {
       state.events = action.payload;
     },
-    setCategories: (state, action: PayloadAction<Category[]>) => {
+    setCategories: (state, action: PayloadAction<CalendarCategory[]>) => {
       state.categories = action.payload;
     },
     setChildren: (state, action: PayloadAction<Child[]>) => {
       state.children = action.payload;
     },
-    setTags: (state, action: PayloadAction<Tag[]>) => {
+    setTags: (state, action: PayloadAction<CalendarTag[]>) => {
       state.tags = action.payload;
     },
-    setParents: (state, action: PayloadAction<Parent[]>) => {
+    setParents: (state, action: PayloadAction<ExtendedAuthUser[]>) => {
       state.parents = action.payload;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -97,6 +72,7 @@ export const selectCalendarEvents = (state: RootState) => state.calendar.events;
 export const selectCalendarParents = (state: RootState) =>
   state.calendar.parents;
 
+// Acciones exportadas
 export const {
   setEvents,
   setCategories,

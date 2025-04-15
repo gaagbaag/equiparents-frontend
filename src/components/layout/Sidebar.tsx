@@ -1,10 +1,8 @@
-// src/components/layout/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
-import { useState } from "react";
 import { Menu, X } from "react-feather";
 
 interface SidebarProps {
@@ -16,6 +14,7 @@ export default function Sidebar({ open, setOpen }: SidebarProps) {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+
   const role = user?.role;
   const userAuth0Id = user?.sub;
 

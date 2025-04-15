@@ -1,17 +1,21 @@
 // src/app/layout.tsx
-import "@/styles/globals.css";
-import { ReactNode } from "react";
+import "../styles/globals.css";
+import type { Metadata } from "next";
 import Providers from "./providers";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Equi·Parents",
-  description: "Plataforma de corresponsabilidad parental",
+  description: "Plataforma de gestión parental compartida",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="es">
-      <body className="w-full min-h-screen bg-gray-50">
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>

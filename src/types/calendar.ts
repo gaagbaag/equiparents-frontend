@@ -10,7 +10,12 @@ export type CalendarTag = {
   name: string;
 };
 
-export type Child = {
+export type EventChildRef = {
+  id: string;
+  firstName: string;
+};
+
+export type ParentRef = {
   id: string;
   firstName: string;
 };
@@ -18,8 +23,24 @@ export type Child = {
 export type CalendarEvent = {
   id: string;
   title: string;
+  description?: string;
+  location?: string;
   start: string;
   end: string;
+  timezone?: string;
+  recurrenceRule?: string;
+  meetingLink?: string;
+  googleEventId?: string;
+  status: "approved" | "pending" | "rejected";
   category?: CalendarCategory;
-  children?: { child: Child }[];
+  tags?: CalendarTag[];
+  children?: { child: EventChildRef }[];
+  parents?: { user: ParentRef }[];
+  createdBy?: { id: string };
+
+  reminders?: {
+    id: string;
+    type: string;
+    minutesBefore: number;
+  }[];
 };

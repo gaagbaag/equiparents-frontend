@@ -85,7 +85,8 @@ export const fetchCurrentUser = createAsyncThunk<
         throw new Error("Usuario no encontrado en backend");
       }
 
-      const backendUser = await meRes.json();
+      const backendData = await meRes.json();
+      const backendUser = backendData.user;
 
       const roles = Array.isArray(sessionData.roles)
         ? sessionData.roles.filter((r: any): r is ValidRole =>
@@ -93,7 +94,17 @@ export const fetchCurrentUser = createAsyncThunk<
           )
         : [];
 
-      dispatch(setUser({ user: backendUser, token: fetchedToken, roles }));
+      dispatch(
+        setUser({
+          user: {
+            ...backendUser,
+            googleCalendarId: backendUser.googleCalendarId ?? null, // 👈 explícito
+            googleRefreshToken: backendUser.googleRefreshToken ?? null,
+          },
+          token: fetchedToken,
+          roles,
+        })
+      );
 
       console.log("✅ Usuario sincronizado desde backend + cookie:", {
         id: backendUser.id,

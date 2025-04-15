@@ -15,7 +15,7 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // ⚠️ necesario si usas objetos como errores
+      serializableCheck: false,
     }),
   devTools: process.env.NODE_ENV !== "production",
 });

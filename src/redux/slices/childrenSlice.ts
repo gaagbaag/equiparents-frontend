@@ -1,4 +1,3 @@
-// src/redux/childrenSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { Child } from "@/types/child";
 import {
@@ -44,13 +43,13 @@ const childrenSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchAllChildren
+      // ✅ fetchAllChildren
       .addCase(fetchAllChildren.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchAllChildren.fulfilled, (state, action) => {
-        state.list = action.payload;
+        state.list = Array.isArray(action.payload) ? action.payload : [];
         state.loading = false;
       })
       .addCase(fetchAllChildren.rejected, (state, action) => {
@@ -58,7 +57,7 @@ const childrenSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // fetchChildById
+      // ✅ fetchChildById
       .addCase(fetchChildById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -72,39 +71,47 @@ const childrenSlice = createSlice({
         state.error = action.payload ?? "Error al cargar hijo/a";
       })
 
-      // createChild
+      // ✅ createChild
       .addCase(createChild.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(createChild.fulfilled, (state) => {
+      .addCase(createChild.fulfilled, (state, action) => {
         state.loading = false;
+        if (action.payload) {
+          state.list.push(action.payload); // 👈 se agrega el nuevo hijo a la lista
+        }
       })
       .addCase(createChild.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? "Error al crear hijo/a";
       })
 
-      // updateChild
+      // ✅ updateChild
       .addCase(updateChild.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateChild.fulfilled, (state) => {
+      .addCase(updateChild.fulfilled, (state, action) => {
         state.loading = false;
+        const index = state.list.findIndex((c) => c.id === action.payload.id);
+        if (index !== -1) {
+          state.list[index] = action.payload; // actualiza en la lista
+        }
       })
       .addCase(updateChild.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? "Error al actualizar hijo/a";
       })
 
-      // deleteChild
+      // ✅ deleteChild
       .addCase(deleteChild.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(deleteChild.fulfilled, (state) => {
+      .addCase(deleteChild.fulfilled, (state, action) => {
         state.loading = false;
+        state.list = state.list.filter((c) => c.id !== action.meta.arg); // elimina del listado
       })
       .addCase(deleteChild.rejected, (state, action) => {
         state.loading = false;
